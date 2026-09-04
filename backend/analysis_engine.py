@@ -1,15 +1,8 @@
-try:
-    from .product_loader import get_product_by_id
-    from .ingredient_engine import analyze_ingredients
-    from .family_engine import evaluate_family
-    from .health_score import calculate_health_score
-    from .recommendation import recommend_products
-except ImportError:
-    from product_loader import get_product_by_id
-    from ingredient_engine import analyze_ingredients
-    from family_engine import evaluate_family
-    from health_score import calculate_health_score
-    from recommendation import recommend_products
+from backend.product_loader import get_product_by_id
+from backend.ingredient_engine import analyze_ingredients
+from backend.family_engine import evaluate_family
+from backend.health_score import calculate_health_score
+from backend.recommendation import recommend_products
 
 def analyze_product(product_id, family_members):
     """
