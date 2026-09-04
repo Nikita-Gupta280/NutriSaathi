@@ -1,0 +1,260 @@
+{
+  "version": "1.1",
+  "ingredients": {
+    "peanut": {
+      "category": "allergen",
+      "tags": ["peanut"],
+      "risk": "high",
+      "aliases": [
+        "peanut",
+        "groundnut",
+        "ground nut",
+        "peanut butter",
+        "peanut paste"
+      ]
+    },
+
+    "milk": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high",
+      "aliases": [
+        "milk",
+        "milk powder",
+        "milk solids",
+        "milk protein",
+        "skimmed milk",
+        "skim milk"
+      ]
+    },
+
+    "milk_solids": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high",
+      "aliases": [
+        "milk solids"
+      ]
+    },
+
+    "whey": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high",
+      "aliases": [
+        "whey",
+        "whey protein",
+        "whey powder"
+      ]
+    },
+
+    "casein": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high",
+      "aliases": [
+        "casein",
+        "caseinate",
+        "sodium caseinate",
+        "calcium caseinate"
+      ]
+    },
+
+    "soy": {
+      "category": "allergen",
+      "tags": ["soy"],
+      "risk": "high",
+      "aliases": [
+        "soy",
+        "soya",
+        "soy lecithin",
+        "soya lecithin",
+        "soy protein",
+        "soya protein"
+      ]
+    },
+
+    "almond": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high",
+      "aliases": [
+        "almond",
+        "almonds",
+        "almond flour",
+        "almond paste"
+      ]
+    },
+
+    "cashew": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high",
+      "aliases": [
+        "cashew",
+        "cashews",
+        "cashew nut"
+      ]
+    },
+
+    "walnut": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high",
+      "aliases": [
+        "walnut",
+        "walnuts"
+      ]
+    },
+
+    "sesame": {
+      "category": "allergen",
+      "tags": ["sesame"],
+      "risk": "high",
+      "aliases": [
+        "sesame",
+        "sesame seeds",
+        "sesame seed",
+        "sesame oil",
+        "til"
+      ]
+    },
+
+    "egg": {
+      "category": "dietary",
+      "tags": ["egg", "non_vegetarian"],
+      "risk": "high",
+      "aliases": [
+        "egg",
+        "eggs",
+        "egg powder",
+        "egg white",
+        "egg yolk",
+        "albumen"
+      ]
+    },
+
+    "gelatin": {
+      "category": "dietary",
+      "tags": ["animal_derived", "non_vegetarian"],
+      "risk": "high",
+      "aliases": [
+        "gelatin",
+        "gelatine"
+      ]
+    },
+
+    "wheat": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium",
+      "aliases": [
+        "wheat",
+        "wheat flour",
+        "refined wheat flour",
+        "maida",
+        "refined wheat flour (maida)"
+      ]
+    },
+
+    "barley": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium",
+      "aliases": [
+        "barley",
+        "barley flour",
+        "malt",
+        "barley malt"
+      ]
+    },
+
+    "rye": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium",
+      "aliases": [
+        "rye",
+        "rye flour"
+      ]
+    },
+
+    "onion": {
+      "category": "dietary",
+      "tags": ["jain_conflict"],
+      "risk": "high",
+      "aliases": [
+        "onion",
+        "onion powder",
+        "onion paste"
+      ]
+    },
+
+    "garlic": {
+      "category": "dietary",
+      "tags": ["jain_conflict"],
+      "risk": "high",
+      "aliases": [
+        "garlic",
+        "garlic powder",
+        "garlic paste"
+      ]
+    },
+
+    "sugar": {
+      "category": "nutrition",
+      "tags": ["added_sugar"],
+      "risk": "medium",
+      "aliases": [
+        "sugar",
+        "sucrose",
+        "cane sugar",
+        "brown sugar",
+        "caster sugar",
+        "powdered sugar",
+        "refined sugar"
+      ]
+    },
+
+    "dextrose": {
+      "category": "nutrition",
+      "tags": ["added_sugar"],
+      "risk": "medium",
+      "aliases": [
+        "dextrose",
+        "glucose",
+        "glucose syrup"
+      ]
+    },
+
+    "invert_sugar": {
+      "category": "nutrition",
+      "tags": ["added_sugar"],
+      "risk": "medium",
+      "aliases": [
+        "invert sugar",
+        "invert sugar syrup"
+      ]
+    },
+
+    "honey": {
+      "category": "nutrition",
+      "tags": ["added_sugar"],
+      "risk": "medium",
+      "aliases": [
+        "honey"
+      ]
+    },
+
+    "palm_oil": {
+      "category": "nutrition",
+      "tags": ["saturated_fat_source"],
+      "risk": "medium",
+      "aliases": [
+        "palm oil",
+        "refined palm oil",
+        "palmolein"
+      ]
+    }
+  }
+}
