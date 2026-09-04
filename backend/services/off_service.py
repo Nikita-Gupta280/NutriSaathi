@@ -2,6 +2,8 @@ import requests
 
 from backend.config import Config
 
+
+
 def get_product_by_barcode(barcode):
     """
     Fetch a product from Open Food Facts using its barcode.

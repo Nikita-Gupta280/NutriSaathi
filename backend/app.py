@@ -9,6 +9,7 @@ from backend.routes.family_routes import family_bp
 from backend.routes.history_routes import history_bp
 from backend.routes.comparison_routes import comparison_bp
 
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
