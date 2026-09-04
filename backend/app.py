@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from config import Config
 from routes.product_routes import product_bp
+from routes.scan_routes import scan_bp
 
 
 app = Flask(__name__)
@@ -11,6 +12,7 @@ app.config.from_object(Config)
 CORS(app)
 
 app.register_blueprint(product_bp)
+app.register_blueprint(scan_bp)
 
 
 @app.get("/")
