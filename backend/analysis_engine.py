@@ -1,8 +1,7 @@
-from product_loader import get_product_by_id
-from ingredient_engine import analyze_ingredients
-from family_engine import evaluate_family
-from health_score import calculate_health_score
-
+from .product_loader import get_product_by_id
+from .ingredient_engine import analyze_ingredients
+from .family_engine import evaluate_family
+from .health_score import calculate_health_score
 
 def analyze_product(product_id, family_members):
     """
@@ -42,12 +41,18 @@ def analyze_product(product_id, family_members):
     )
 
     # 4. Return complete analysis
+    score_100 = health_score_result["score"]
+    score_10 = round(score_100 / 10, 1)
+
     return {
         "success": True,
         "product": product,
-        "health_score": health_score_result["score"],
-        "health_label": health_score_result["label"],
-        "health_details": health_score_result["deductions"],
+        "health_score": {
+            "score": score_10,
+            "scale": 10,
+            "label": health_score_result["label"],
+            "details": health_score_result["deductions"]
+        },
         "ingredient_analysis": ingredient_analysis,
         "family_results": family_results
     }
