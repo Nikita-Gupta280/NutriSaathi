@@ -1,8 +1,15 @@
-from .product_loader import get_product_by_id
-from .ingredient_engine import analyze_ingredients
-from .family_engine import evaluate_family
-from .health_score import calculate_health_score
-
+try:
+    from .product_loader import get_product_by_id
+    from .ingredient_engine import analyze_ingredients
+    from .family_engine import evaluate_family
+    from .health_score import calculate_health_score
+    from .recommendation import recommend_products
+except ImportError:
+    from product_loader import get_product_by_id
+    from ingredient_engine import analyze_ingredients
+    from family_engine import evaluate_family
+    from health_score import calculate_health_score
+    from recommendation import recommend_products
 
 def analyze_product(product_id, family_members):
     """
@@ -12,8 +19,6 @@ def analyze_product(product_id, family_members):
     Product Loader
         ↓
     Ingredient Engine
-        ↓
-    Health Score
         ↓
     Family Engine
     """
@@ -32,22 +37,25 @@ def analyze_product(product_id, family_members):
         product["ingredients"]
     )
 
-    # 3. Calculate deterministic health score
     health_score_result = calculate_health_score(
-        product["nutrition"]
+    product["nutrition"]
     )
 
-    score_100 = health_score_result["score"]
-    score_10 = round(score_100 / 10, 1)
-
-    # 4. Analyze product for every family member
+    # 3. Analyze product for every family member
     family_results = evaluate_family(
         family_members,
         product["ingredients"],
         product["nutrition"]
     )
+    recommendations = recommend_products(
+        product,
+        family_members
+    )
 
-    # 5. Return complete analysis
+    # 4. Return complete analysis
+    score_100 = health_score_result["score"]
+    score_10 = round(score_100 / 10, 1)
+
     return {
         "success": True,
         "product": product,
@@ -58,11 +66,12 @@ def analyze_product(product_id, family_members):
             "details": health_score_result["deductions"]
         },
         "ingredient_analysis": ingredient_analysis,
-        "family_results": family_results
+        "family_results": family_results,
+        "recommendations": recommendations
     }
 
-
 if __name__ == "__main__":
+
     family = [
         {
             "member_id": "dad",
