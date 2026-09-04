@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
 
-from ingredient_engine import analyze_ingredients
-from health_engine import evaluate_health
-
+from .ingredient_engine import analyze_ingredients
+from .health_engine import evaluate_health
 
 INGREDIENTS_FILE = Path(__file__).parent / "knowledge" / "ingredients.json"
 
@@ -222,4 +221,3 @@ if __name__ == "__main__":
     )
 
     print(json.dumps(results, indent=2))
-    
