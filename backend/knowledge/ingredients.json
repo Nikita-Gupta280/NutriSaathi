@@ -1,4 +1,95 @@
 {
   "version": "1.0",
-  "ingredients": {}
+  "ingredients": {
+    "peanut": {
+      "category": "allergen",
+      "tags": ["peanut"],
+      "risk": "high"
+    },
+    "groundnut": {
+      "category": "allergen",
+      "tags": ["peanut"],
+      "risk": "high"
+    },
+    "milk": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high"
+    },
+    "milk_solids": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high"
+    },
+    "whey": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high"
+    },
+    "casein": {
+      "category": "allergen",
+      "tags": ["dairy"],
+      "risk": "high"
+    },
+    "soy": {
+      "category": "allergen",
+      "tags": ["soy"],
+      "risk": "high"
+    },
+    "soya": {
+      "category": "allergen",
+      "tags": ["soy"],
+      "risk": "high"
+    },
+    "almond": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high"
+    },
+    "cashew": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high"
+    },
+    "walnut": {
+      "category": "allergen",
+      "tags": ["tree_nut"],
+      "risk": "high"
+    },
+    "wheat": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium"
+    },
+    "barley": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium"
+    },
+    "rye": {
+      "category": "dietary",
+      "tags": ["gluten"],
+      "risk": "medium"
+    },
+    "egg": {
+      "category": "dietary",
+      "tags": ["egg", "non_vegetarian"],
+      "risk": "high"
+    },
+    "gelatin": {
+      "category": "dietary",
+      "tags": ["animal_derived", "non_vegetarian"],
+      "risk": "high"
+    },
+    "onion": {
+      "category": "dietary",
+      "tags": ["jain_conflict"],
+      "risk": "high"
+    },
+    "garlic": {
+      "category": "dietary",
+      "tags": ["jain_conflict"],
+      "risk": "high"
+    }
+  }
 }

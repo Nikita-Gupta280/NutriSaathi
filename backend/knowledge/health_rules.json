@@ -1,0 +1,108 @@
+{
+  "version": "1.0",
+  "rules": {
+    "diabetes": {
+      "name": "Blood Sugar Management",
+      "nutrients": {
+        "sugar_g": {
+          "moderate": 10,
+          "high": 15
+        },
+        "carbohydrates_g": {
+          "moderate": 30,
+          "high": 45
+        },
+        "dietary_fiber_g": {
+          "low": 2
+        }
+      }
+    },
+
+    "high_cholesterol": {
+      "name": "Cholesterol Management",
+      "nutrients": {
+        "saturated_fat_g": {
+          "moderate": 3,
+          "high": 5
+        },
+        "trans_fat_g": {
+          "moderate": 0.5,
+          "high": 1
+        },
+        "cholesterol_mg": {
+          "moderate": 60,
+          "high": 100
+        }
+      }
+    },
+
+    "heart_health": {
+      "name": "Heart Health",
+      "nutrients": {
+        "saturated_fat_g": {
+          "moderate": 3,
+          "high": 5
+        },
+        "trans_fat_g": {
+          "moderate": 0.5,
+          "high": 1
+        },
+        "sodium_mg": {
+          "moderate": 460,
+          "high": 920
+        }
+      }
+    },
+
+    "high_blood_pressure": {
+      "name": "Blood Pressure Management",
+      "nutrients": {
+        "sodium_mg": {
+          "moderate": 460,
+          "high": 920
+        }
+      }
+    },
+
+    "weight_management": {
+      "name": "Weight Management",
+      "nutrients": {
+        "calories_kcal": {
+          "moderate": 250,
+          "high": 400
+        },
+        "sugar_g": {
+          "moderate": 10,
+          "high": 15
+        },
+        "saturated_fat_g": {
+          "moderate": 3,
+          "high": 5
+        },
+        "dietary_fiber_g": {
+          "low": 2
+        }
+      }
+    },
+
+    "low_sodium": {
+      "name": "Low Sodium",
+      "nutrients": {
+        "sodium_mg": {
+          "moderate": 460,
+          "high": 920
+        }
+      }
+    },
+
+    "high_protein": {
+      "name": "Protein Focus",
+      "nutrients": {
+        "protein_g": {
+          "low": 5,
+          "good": 10
+        }
+      }
+    }
+  }
+}
