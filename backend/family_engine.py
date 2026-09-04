@@ -1,8 +1,12 @@
 import json
 from pathlib import Path
 
-from .ingredient_engine import analyze_ingredients
-from .health_engine import evaluate_health
+try:
+    from .ingredient_engine import analyze_ingredients
+    from .health_engine import evaluate_health
+except ImportError:
+    from ingredient_engine import analyze_ingredients
+    from health_engine import evaluate_health
 
 INGREDIENTS_FILE = Path(__file__).parent / "knowledge" / "ingredients.json"
 

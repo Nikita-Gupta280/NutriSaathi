@@ -1,7 +1,11 @@
-from .health_score import calculate_health_score
-from .family_engine import evaluate_family
-from .product_loader import load_products
-
+try:
+    from .health_score import calculate_health_score
+    from .family_engine import evaluate_family
+    from .product_loader import load_products
+except ImportError:
+    from health_score import calculate_health_score
+    from family_engine import evaluate_family
+    from product_loader import load_products
 EXCLUDED_NAME_TERMS = {
     "gift",
     "hamper",
