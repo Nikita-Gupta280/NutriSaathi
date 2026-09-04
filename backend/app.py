@@ -5,6 +5,7 @@ from config import Config
 from routes.product_routes import product_bp
 from routes.scan_routes import scan_bp
 from routes.analysis_routes import analysis_bp
+from routes.family_routes import family_bp
 
 
 app = Flask(__name__)
@@ -15,6 +16,7 @@ CORS(app)
 app.register_blueprint(product_bp)
 app.register_blueprint(scan_bp)
 app.register_blueprint(analysis_bp)
+app.register_blueprint(family_bp)
 
 
 @app.get("/")

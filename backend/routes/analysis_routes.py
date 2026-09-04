@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
 
+from analysis_engine import analyze_product
+
 
 analysis_bp = Blueprint("analysis", __name__)
 
@@ -23,11 +25,16 @@ def analyze():
             "error": "family_members must be a list"
         }), 400
 
-    # Nikita's analysis engine will be connected here
-    # after backend-nikita is merged into backend-kashish.
-    return jsonify({
-        "success": True,
-        "message": "Analysis API ready",
-        "product_id": product_id,
-        "family_members": family_members
-    }), 200
+    try:
+        result = analyze_product(
+            product_id,
+            family_members
+        )
+
+        return jsonify(result), 200
+
+    except Exception as exc:
+        return jsonify({
+            "success": False,
+            "error": str(exc)
+        }), 500
