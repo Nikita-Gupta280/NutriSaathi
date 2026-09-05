@@ -1,6 +1,6 @@
 import requests
 
-from config import Config
+from backend.config import Config
 
 
 def get_product_by_barcode(barcode):

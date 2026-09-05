@@ -1,13 +1,13 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-from config import Config
-from routes.product_routes import product_bp
-from routes.scan_routes import scan_bp
-from routes.analysis_routes import analysis_bp
-from routes.family_routes import family_bp
-from routes.history_routes import history_bp
-from routes.comparison_routes import comparison_bp
+from backend.config import Config
+from backend.routes.product_routes import product_bp
+from backend.routes.scan_routes import scan_bp
+from backend.routes.analysis_routes import analysis_bp
+from backend.routes.family_routes import family_bp
+from backend.routes.history_routes import history_bp
+from backend.routes.comparison_routes import comparison_bp
 
 
 app = Flask(__name__)

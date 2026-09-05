@@ -3,8 +3,7 @@ import tempfile
 
 from flask import Blueprint, jsonify, request
 
-from services.ocr_service import extract_text_from_image
-
+from backend.services.ocr_service import extract_text_from_image
 
 scan_bp = Blueprint("scans", __name__)
 
