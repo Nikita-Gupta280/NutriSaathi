@@ -1,50 +1,388 @@
+import React, { useState } from 'react';
 import {
+  Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
-  Pressable,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+
+const API = 'http://192.168.29.107:5000';
 
 export default function ScanScreen() {
-  const manualEntry = () => {
-    Alert.alert(
-      'Manual barcode',
-      'Manual barcode entry will be connected to the product database.'
-    );
+  const router = useRouter();
+
+  const [cameraMode, setCameraMode] =
+    useState<'none' | 'barcode'>('none');
+
+  const [permission, requestPermission] =
+    useCameraPermissions();
+
+  const [barcode, setBarcode] = useState('');
+  const [manualBarcode, setManualBarcode] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // ---------------------------------------------------------
+  // BARCODE -> OPEN FOOD FACTS -> RESULT
+  // ---------------------------------------------------------
+
+  const handleBarcode = async ({
+    data,
+  }: {
+    data: string;
+  }) => {
+    if (!data || loading) return;
+
+    setLoading(true);
+    setCameraMode('none');
+    setBarcode(data);
+
+    try {
+      console.log('SCANNED BARCODE:', data);
+
+      const response = await fetch(
+        `${API}/api/scan/barcode`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            barcode: data,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      console.log(
+        'BARCODE RESULT:',
+        result
+      );
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error ||
+            'Product was not found in Open Food Facts.'
+        );
+      }
+
+      router.push({
+        pathname: '/result',
+        params: {
+          analysis: JSON.stringify(result),
+        },
+      });
+    } catch (error) {
+      console.error(
+        'BARCODE ERROR:',
+        error
+      );
+
+      Alert.alert(
+        'Product not found',
+        error instanceof Error
+          ? error.message
+          : 'Could not find the scanned product.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const openResult = () => {
-    router.push('/result');
+  // ---------------------------------------------------------
+  // BARCODE CAMERA
+  // ---------------------------------------------------------
+
+  const startBarcodeScanner = async () => {
+    if (!permission?.granted) {
+      const result = await requestPermission();
+
+      if (!result.granted) {
+        Alert.alert(
+          'Camera permission needed',
+          'Please allow camera access to scan a barcode.'
+        );
+        return;
+      }
+    }
+
+    setCameraMode('barcode');
   };
+
+  // ---------------------------------------------------------
+  // OCR FOOD LABEL
+  // ---------------------------------------------------------
+
+  const scanFoodLabel = async () => {
+    try {
+      const permission =
+        await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Camera permission needed',
+          'Please allow camera access to scan the food label.'
+        );
+        return;
+      }
+
+      const result =
+        await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+        });
+
+      if (
+        result.canceled ||
+        !result.assets?.[0]?.uri
+      ) {
+        return;
+      }
+
+      setLoading(true);
+
+      const imageUri = result.assets[0].uri;
+
+      const formData = new FormData();
+
+      formData.append('image', {
+        uri: imageUri,
+        name: 'food-label.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      console.log('SENDING IMAGE TO OCR');
+
+      const response = await fetch(
+        `${API}/api/scan/ocr`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      console.log('OCR RESULT:', data);
+
+      if (!response.ok || !data.success) {
+        Alert.alert(
+          'OCR failed',
+          data.error ||
+            'Could not read the food label.'
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Food label scanned',
+        data.text ||
+          'No text could be detected.'
+      );
+    } catch (error) {
+      console.error('OCR ERROR:', error);
+
+      Alert.alert(
+        'OCR failed',
+        'Could not connect to the OCR service. Make sure Flask is running and your phone is on the same Wi-Fi.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------------------------------------------------
+  // MANUAL BARCODE
+  // ---------------------------------------------------------
+
+  const searchManualBarcode = async () => {
+    const code = manualBarcode.trim();
+
+    if (!code) {
+      Alert.alert(
+        'Barcode required',
+        'Please enter a barcode.'
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log(
+        'MANUAL BARCODE:',
+        code
+      );
+
+      const response = await fetch(
+        `${API}/api/scan/barcode`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            barcode: code,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      console.log(
+        'MANUAL BARCODE RESULT:',
+        result
+      );
+
+      if (!response.ok || !result.success) {
+        Alert.alert(
+          'Product not found',
+          result.error ||
+            'Product was not found.'
+        );
+        return;
+      }
+
+      router.push({
+        pathname: '/result',
+        params: {
+          analysis: JSON.stringify(result),
+        },
+      });
+    } catch (error) {
+      console.error(
+        'MANUAL BARCODE ERROR:',
+        error
+      );
+
+      Alert.alert(
+        'Search failed',
+        'Could not connect to the barcode service.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------------------------------------------------
+  // BARCODE CAMERA SCREEN
+  // ---------------------------------------------------------
+
+  if (cameraMode === 'barcode') {
+    return (
+      <SafeAreaView style={styles.cameraScreen}>
+        <CameraView
+          style={styles.camera}
+          facing="back"
+          barcodeScannerSettings={{
+            barcodeTypes: [
+              'ean13',
+              'ean8',
+              'upc_a',
+              'upc_e',
+              'code128',
+              'code39',
+            ],
+          }}
+          onBarcodeScanned={
+            loading ? undefined : handleBarcode
+          }
+        />
+
+        <View style={styles.cameraOverlay}>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() =>
+              setCameraMode('none')
+            }
+          >
+            <Ionicons
+              name="close"
+              size={28}
+              color="#FFFFFF"
+            />
+          </Pressable>
+
+          <View style={styles.scanBox} />
+
+          <Text style={styles.cameraText}>
+            Point the camera at a barcode
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ---------------------------------------------------------
+  // MAIN SCREEN
+  // ---------------------------------------------------------
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'bottom']}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>NUTRISAATHI</Text>
-            <Text style={styles.title}>Scan your food</Text>
+            <Text style={styles.eyebrow}>
+              NUTRISAATHI
+            </Text>
+
+            <Text style={styles.title}>
+              Scan your food
+            </Text>
           </View>
 
           <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={21} color="#287A45" />
+            <Ionicons
+              name="sparkles"
+              size={21}
+              color="#287A45"
+            />
           </View>
         </View>
 
         <View style={styles.scannerCard}>
           <View style={styles.scannerFrame}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
+            <View
+              style={[
+                styles.corner,
+                styles.topLeft,
+              ]}
+            />
+
+            <View
+              style={[
+                styles.corner,
+                styles.topRight,
+              ]}
+            />
+
+            <View
+              style={[
+                styles.corner,
+                styles.bottomLeft,
+              ]}
+            />
+
+            <View
+              style={[
+                styles.corner,
+                styles.bottomRight,
+              ]}
+            />
 
             <View style={styles.scanLine} />
 
@@ -62,12 +400,17 @@ export default function ScanScreen() {
           </Text>
 
           <Text style={styles.scannerSubtitle}>
-            We'll instantly understand the product and check what's inside.
+            We'll instantly understand the product
+            and check what's inside.
           </Text>
         </View>
 
         <View style={styles.optionsRow}>
-          <Pressable style={styles.optionCard}>
+          <Pressable
+            style={styles.optionCard}
+            onPress={startBarcodeScanner}
+            disabled={loading}
+          >
             <View style={styles.optionIcon}>
               <Ionicons
                 name="barcode-outline"
@@ -76,14 +419,20 @@ export default function ScanScreen() {
               />
             </View>
 
-            <Text style={styles.optionTitle}>Barcode</Text>
+            <Text style={styles.optionTitle}>
+              Barcode
+            </Text>
 
             <Text style={styles.optionSubtitle}>
               Scan product code
             </Text>
           </Pressable>
 
-          <Pressable style={styles.optionCard}>
+          <Pressable
+            style={styles.optionCard}
+            onPress={scanFoodLabel}
+            disabled={loading}
+          >
             <View style={styles.optionIcon}>
               <Ionicons
                 name="document-text-outline"
@@ -92,7 +441,9 @@ export default function ScanScreen() {
               />
             </View>
 
-            <Text style={styles.optionTitle}>Food Label</Text>
+            <Text style={styles.optionTitle}>
+              Food Label
+            </Text>
 
             <Text style={styles.optionSubtitle}>
               Scan ingredients
@@ -100,10 +451,7 @@ export default function ScanScreen() {
           </Pressable>
         </View>
 
-        <Pressable
-          style={styles.manualCard}
-          onPress={manualEntry}
-        >
+        <View style={styles.manualCard}>
           <View style={styles.manualIcon}>
             <Ionicons
               name="search-outline"
@@ -112,46 +460,49 @@ export default function ScanScreen() {
             />
           </View>
 
-          <Text style={styles.manualText}>
-            Enter barcode manually
-          </Text>
-
-          <Ionicons
-            name="chevron-forward"
-            size={24}
-            color="#287A45"
+          <TextInput
+            style={styles.manualInput}
+            value={manualBarcode}
+            onChangeText={setManualBarcode}
+            placeholder="Enter barcode"
+            placeholderTextColor="#9AA69F"
+            keyboardType="numeric"
+            editable={!loading}
           />
-        </Pressable>
 
-        <Pressable
-          style={styles.demoCard}
-          onPress={openResult}
-        >
-          <View style={styles.demoIcon}>
+          <Pressable
+            style={styles.searchButton}
+            onPress={searchManualBarcode}
+            disabled={loading}
+          >
             <Ionicons
-              name="sparkles"
+              name="arrow-forward"
+              size={22}
+              color="#FFFFFF"
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.ocrCard}>
+          <View style={styles.ocrIcon}>
+            <Ionicons
+              name="camera-outline"
               size={21}
               color="#173B2A"
             />
           </View>
 
-          <View style={styles.demoContent}>
-            <Text style={styles.demoTitle}>
-              Smart food analysis
+          <View style={styles.ocrContent}>
+            <Text style={styles.ocrTitle}>
+              Food Label OCR
             </Text>
 
-            <Text style={styles.demoText}>
-              Tap here to preview how NutriSaathi analyses nutrition,
-              ingredients, allergens and family compatibility.
+            <Text style={styles.ocrText}>
+              Photograph an ingredients or nutrition
+              label and NutriSaathi will read the text.
             </Text>
           </View>
-
-          <Ionicons
-            name="chevron-forward"
-            size={21}
-            color="#287A45"
-          />
-        </Pressable>
+        </View>
 
         <View style={styles.tipCard}>
           <Ionicons
@@ -161,7 +512,8 @@ export default function ScanScreen() {
           />
 
           <Text style={styles.tipText}>
-            Your scan results combine food information with your family's
+            Your scan results combine food
+            information with your family's
             preferences.
           </Text>
         </View>
@@ -169,6 +521,10 @@ export default function ScanScreen() {
     </SafeAreaView>
   );
 }
+
+// ---------------------------------------------------------
+// STYLES
+// ---------------------------------------------------------
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -343,7 +699,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 21,
-    padding: 16,
+    padding: 12,
+    paddingLeft: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -357,17 +714,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F4E7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
 
-  manualText: {
+  manualInput: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#315541',
+    fontSize: 15,
+    color: '#173B2A',
+    paddingVertical: 8,
   },
 
-  demoCard: {
+  searchButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#287A45',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ocrCard: {
     marginTop: 12,
     backgroundColor: '#E8F4E7',
     borderRadius: 22,
@@ -376,7 +742,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  demoIcon: {
+  ocrIcon: {
     width: 45,
     height: 45,
     borderRadius: 15,
@@ -386,18 +752,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
 
-  demoContent: {
+  ocrContent: {
     flex: 1,
   },
 
-  demoTitle: {
+  ocrTitle: {
     fontSize: 14,
     fontWeight: '800',
     color: '#287A45',
     marginBottom: 4,
   },
 
-  demoText: {
+  ocrText: {
     fontSize: 10,
     lineHeight: 16,
     color: '#5F7167',
@@ -416,5 +782,51 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     color: '#78867D',
     marginLeft: 8,
+  },
+
+  cameraScreen: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+
+  camera: {
+    flex: 1,
+  },
+
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scanBox: {
+    width: 280,
+    height: 180,
+    borderWidth: 3,
+    borderColor: '#B9E6B7',
+    borderRadius: 20,
+  },
+
+  cameraText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 25,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
 });

@@ -42,6 +42,7 @@ def get_product_by_barcode(barcode):
 
     nutriments = product.get("nutriments", {})
 
+
     return {
         "product_id": product.get("id"),
         "barcode": barcode,
@@ -52,15 +53,19 @@ def get_product_by_barcode(barcode):
         "ingredients": product.get("ingredients_text") or "",
         "allergens": product.get("allergens") or "",
         "nutrition": {
-            "calories_kcal_100g": nutriments.get("energy-kcal_100g"),
-            "carbohydrates_g_100g": nutriments.get("carbohydrates_100g"),
-            "protein_g_100g": nutriments.get("proteins_100g"),
-            "fat_g_100g": nutriments.get("fat_100g"),
-            "saturated_fat_g_100g": nutriments.get("saturated-fat_100g"),
-            "trans_fat_g_100g": nutriments.get("trans-fat_100g"),
-            "sugar_g_100g": nutriments.get("sugars_100g"),
-            "fiber_g_100g": nutriments.get("fiber_100g"),
-            "sodium_mg_100g": nutriments.get("sodium_100g"),
+            "calories_kcal": nutriments.get("energy-kcal_100g"),
+            "carbohydrates_g": nutriments.get("carbohydrates_100g"),
+            "protein_g": nutriments.get("proteins_100g"),
+            "total_fat_g": nutriments.get("fat_100g"),
+            "saturated_fat_g": nutriments.get("saturated-fat_100g"),
+            "trans_fat_g": nutriments.get("trans-fat_100g"),
+            "sugar_g": nutriments.get("sugars_100g"),
+            "dietary_fiber_g": nutriments.get("fiber_100g"),
+            "sodium_mg": (
+                nutriments.get("sodium_100g") * 1000
+                if nutriments.get("sodium_100g") is not None
+                else None
+            ),
         },
         "source": "open_food_facts",
         "confidence": 0.9
