@@ -1,11 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-
   return (
     <Tabs
       screenOptions={{
@@ -15,28 +12,29 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#9AA69E',
 
         tabBarStyle: {
-          height: 60 + insets.bottom,
-          paddingTop: 4,
-          paddingBottom: insets.bottom,
-
           backgroundColor: '#FFFFFF',
-
           borderTopWidth: 1,
           borderTopColor: '#E7ECE7',
 
-          elevation: 6,
-          shadowOpacity: 0.04,
-        },
-
-        tabBarItemStyle: {
-          height: 56,
+          // IMPORTANT:
+          // Do not set a fixed height here.
+          // React Navigation will automatically account
+          // for the Android system navigation area.
+          paddingTop: 6,
+          paddingBottom: 6,
         },
 
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
-          marginTop: 0,
+          marginTop: 1,
         },
+
+        tabBarItemStyle: {
+          paddingVertical: 0,
+        },
+
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen
@@ -44,7 +42,11 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Ionicons
+              name="home-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -54,7 +56,11 @@ export default function TabLayout() {
         options={{
           title: 'Scan',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="scan-outline" size={size} color={color} />
+            <Ionicons
+              name="scan-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -64,7 +70,11 @@ export default function TabLayout() {
         options={{
           title: 'Family',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+            <Ionicons
+              name="people-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -74,7 +84,11 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons
+              name="person-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -84,13 +98,39 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
+            <Ionicons
+              name="compass-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
 
+      {/* Hidden screens */}
       <Tabs.Screen
         name="result"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="compare"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="comparison-result"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="chat"
         options={{
           href: null,
         }}

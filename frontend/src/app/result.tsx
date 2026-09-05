@@ -1,56 +1,127 @@
 import React from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+const alternatives = [
+  {
+    name: 'Whole Grain Oat Bites',
+    brand: 'NutriChoice',
+    score: 84,
+    description:
+      'A similar snack with lower sugar and more fiber.',
+    tags: ['Lower sugar', 'High fiber', 'Whole grains'],
+    improvements: [
+      'Sugar: 9g instead of 18g',
+      'Fiber: 6g instead of 2g',
+      'Protein: 8g instead of 6g',
+    ],
+    family:
+      'Better fit across the family profiles.',
+  },
+  {
+    name: 'High Protein Oat Crunch',
+    brand: 'FitHarvest',
+    score: 81,
+    description:
+      'A stronger option when protein and satiety matter.',
+    tags: ['High protein', 'Lower sugar', 'Oats'],
+    improvements: [
+      'Protein: 11g',
+      'Sugar: 8g',
+      'Fiber: 5g',
+    ],
+    family:
+      'Especially suitable for high-protein goals.',
+  },
+  {
+    name: 'Simple Oat Digestives',
+    brand: 'GrainGood',
+    score: 78,
+    description:
+      'A simpler everyday option with less added sugar.',
+    tags: ['Simple ingredients', 'Less sugar'],
+    improvements: [
+      'Lower added sugar',
+      'More whole grains',
+      'Less processed',
+    ],
+    family:
+      'A better everyday snack choice.',
+  },
+];
+
 export default function ResultScreen() {
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'bottom']}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={21} color="#173B2A" />
+            <Ionicons
+              name="arrow-back"
+              size={21}
+              color="#173B2A"
+            />
           </Pressable>
 
-          <Text style={styles.headerLabel}>PRODUCT ANALYSIS</Text>
+          <Text style={styles.headerLabel}>
+            PRODUCT ANALYSIS
+          </Text>
 
           <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={19} color="#287A45" />
+            <Ionicons
+              name="sparkles"
+              size={19}
+              color="#287A45"
+            />
           </View>
         </View>
 
-        {/* Product */}
+        {/* PRODUCT */}
         <View style={styles.productCard}>
           <View style={styles.productImage}>
             <Text style={styles.productEmoji}>🍪</Text>
           </View>
 
           <View style={styles.productInfo}>
-            <Text style={styles.brand}>EXAMPLE FOODS</Text>
-            <Text style={styles.productName}>Oat & Choco Biscuits</Text>
-            <Text style={styles.productMeta}>Biscuits · 100 g</Text>
+            <Text style={styles.brand}>
+              EXAMPLE FOODS
+            </Text>
+
+            <Text style={styles.productName}>
+              Oat & Choco Biscuits
+            </Text>
+
+            <Text style={styles.productMeta}>
+              Biscuits · 100 g
+            </Text>
           </View>
         </View>
 
-        {/* Score */}
+        {/* SCORE */}
         <View style={styles.scoreCard}>
           <View style={styles.scoreTop}>
             <View style={styles.scoreInfo}>
-              <Text style={styles.scoreLabel}>YOUR FOOD SCORE</Text>
+              <Text style={styles.scoreLabel}>
+                YOUR FOOD SCORE
+              </Text>
 
               <Text style={styles.scoreDescription}>
                 Good choice, with a few things to watch.
@@ -58,8 +129,13 @@ export default function ResultScreen() {
             </View>
 
             <View style={styles.scoreCircle}>
-              <Text style={styles.scoreNumber}>72</Text>
-              <Text style={styles.scoreOutOf}>/100</Text>
+              <Text style={styles.scoreNumber}>
+                72
+              </Text>
+
+              <Text style={styles.scoreOutOf}>
+                /100
+              </Text>
             </View>
           </View>
 
@@ -74,7 +150,10 @@ export default function ResultScreen() {
                 size={15}
                 color="#287A45"
               />
-              <Text style={styles.verdictText}>MODERATE</Text>
+
+              <Text style={styles.verdictText}>
+                MODERATE
+              </Text>
             </View>
 
             <Text style={styles.scoreHint}>
@@ -83,95 +162,80 @@ export default function ResultScreen() {
           </View>
         </View>
 
-        {/* Why score */}
-        <Text style={styles.sectionTitle}>Why this score?</Text>
+        {/* WHY SCORE */}
+        <Text style={styles.sectionTitle}>
+          Why this score?
+        </Text>
 
         <View style={styles.reasonCard}>
-          <View style={styles.reasonRow}>
-            <View style={styles.goodIcon}>
-              <Ionicons name="checkmark" size={17} color="#287A45" />
-            </View>
-
-            <View style={styles.reasonContent}>
-              <Text style={styles.reasonTitle}>Good protein content</Text>
-              <Text style={styles.reasonText}>
-                Provides a useful amount of protein for a packaged snack.
-              </Text>
-            </View>
-          </View>
+          <ReasonRow
+            type="good"
+            title="Good protein content"
+            text="Provides a useful amount of protein for a packaged snack."
+          />
 
           <View style={styles.divider} />
 
-          <View style={styles.reasonRow}>
-            <View style={styles.warningIcon}>
-              <Ionicons
-                name="warning-outline"
-                size={17}
-                color="#B8754E"
-              />
-            </View>
-
-            <View style={styles.reasonContent}>
-              <Text style={styles.reasonTitle}>Sugar needs attention</Text>
-              <Text style={styles.reasonText}>
-                Sugar is relatively high for a regular everyday snack.
-              </Text>
-            </View>
-          </View>
+          <ReasonRow
+            type="warning"
+            title="Sugar needs attention"
+            text="Sugar is relatively high for a regular everyday snack."
+          />
 
           <View style={styles.divider} />
 
-          <View style={styles.reasonRow}>
-            <View style={styles.goodIcon}>
-              <Ionicons name="checkmark" size={17} color="#287A45" />
-            </View>
-
-            <View style={styles.reasonContent}>
-              <Text style={styles.reasonTitle}>
-                No major allergen detected
-              </Text>
-              <Text style={styles.reasonText}>
-                No major allergen was flagged in the available ingredient
-                data.
-              </Text>
-            </View>
-          </View>
+          <ReasonRow
+            type="good"
+            title="No major allergen detected"
+            text="No major allergen was flagged in the available ingredient data."
+          />
         </View>
 
-        {/* Nutrition */}
+        {/* NUTRITION */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nutrition snapshot</Text>
-          <Text style={styles.smallLabel}>per 100 g</Text>
+          <Text style={styles.sectionTitle}>
+            Nutrition snapshot
+          </Text>
+
+          <Text style={styles.smallLabel}>
+            per 100 g
+          </Text>
         </View>
 
         <View style={styles.nutritionGrid}>
-          <View style={styles.nutritionCard}>
-            <Text style={styles.nutritionValue}>450</Text>
-            <Text style={styles.nutritionUnit}>kcal</Text>
-            <Text style={styles.nutritionLabel}>Calories</Text>
-          </View>
+          <NutritionCard
+            value="450"
+            unit="kcal"
+            label="Calories"
+          />
 
-          <View style={styles.nutritionCard}>
-            <Text style={styles.nutritionValue}>18 g</Text>
-            <Text style={styles.highLabel}>high</Text>
-            <Text style={styles.nutritionLabel}>Sugar</Text>
-          </View>
+          <NutritionCard
+            value="18 g"
+            unit="high"
+            label="Sugar"
+            warning
+          />
 
-          <View style={styles.nutritionCard}>
-            <Text style={styles.nutritionValue}>6 g</Text>
-            <Text style={styles.nutritionUnit}>good</Text>
-            <Text style={styles.nutritionLabel}>Protein</Text>
-          </View>
+          <NutritionCard
+            value="6 g"
+            unit="good"
+            label="Protein"
+          />
 
-          <View style={styles.nutritionCard}>
-            <Text style={styles.nutritionValue}>2 g</Text>
-            <Text style={styles.nutritionUnit}>low</Text>
-            <Text style={styles.nutritionLabel}>Fiber</Text>
-          </View>
+          <NutritionCard
+            value="2 g"
+            unit="low"
+            label="Fiber"
+          />
         </View>
 
-        {/* Ingredients */}
-        <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
+        {/* INGREDIENTS */}
+        <Text
+          style={[
+            styles.sectionTitle,
+            styles.sectionSpacing,
+          ]}
+        >
           Ingredient check
         </Text>
 
@@ -197,25 +261,30 @@ export default function ResultScreen() {
           </View>
 
           <View style={styles.tagRow}>
-            <View style={styles.warningTag}>
-              <Text style={styles.warningTagText}>Added sugar</Text>
-            </View>
+            <IngredientTag
+              text="Added sugar"
+              type="warning"
+            />
 
-            <View style={styles.neutralTag}>
-              <Text style={styles.neutralTagText}>Refined flour</Text>
-            </View>
+            <IngredientTag
+              text="Refined flour"
+              type="neutral"
+            />
 
-            <View style={styles.goodTag}>
-              <Text style={styles.goodTagText}>Oats</Text>
-            </View>
+            <IngredientTag
+              text="Oats"
+              type="good"
+            />
           </View>
         </View>
 
-        {/* Family */}
+        {/* FAMILY */}
         <View style={styles.familyCard}>
           <View style={styles.familyHeader}>
             <View style={styles.familyHeaderText}>
-              <Text style={styles.familyLabel}>SMART FAMILY MODE</Text>
+              <Text style={styles.familyLabel}>
+                SMART FAMILY MODE
+              </Text>
 
               <Text style={styles.familyTitle}>
                 How does it fit your family?
@@ -223,107 +292,224 @@ export default function ResultScreen() {
             </View>
 
             <View style={styles.familyIcon}>
-              <Ionicons name="people" size={21} color="#173B2A" />
-            </View>
-          </View>
-
-          {/* You */}
-          <View style={styles.familyMember}>
-            <View style={styles.youAvatar}>
-              <Ionicons name="person" size={17} color="#287A45" />
-            </View>
-
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>You</Text>
-              <Text style={styles.memberReason}>
-                Generally suitable
-              </Text>
-            </View>
-
-            <View style={styles.safePill}>
-              <Ionicons name="checkmark" size={12} color="#287A45" />
-              <Text style={styles.safeText}>SAFE</Text>
-            </View>
-          </View>
-
-          {/* Mom */}
-          <View style={styles.familyMember}>
-            <View style={styles.momAvatar}>
-              <Ionicons name="heart" size={17} color="#B8754E" />
-            </View>
-
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>Mom</Text>
-              <Text style={styles.memberReason}>
-                Watch sodium & sugar
-              </Text>
-            </View>
-
-            <View style={styles.cautionPill}>
               <Ionicons
-                name="warning-outline"
-                size={12}
-                color="#B8754E"
+                name="people"
+                size={21}
+                color="#173B2A"
               />
-              <Text style={styles.cautionText}>CAUTION</Text>
             </View>
           </View>
 
-          {/* Dad */}
-          <View style={styles.familyMember}>
-            <View style={styles.dadAvatar}>
-              <Ionicons name="person" size={17} color="#668CA0" />
-            </View>
+          <FamilyMember
+            name="You"
+            reason="Generally suitable"
+            status="SAFE"
+            icon="person"
+          />
 
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberName}>Dad</Text>
-              <Text style={styles.memberReason}>
-                High sugar for his profile
-              </Text>
-            </View>
+          <FamilyMember
+            name="Mom"
+            reason="Watch sodium & sugar"
+            status="CAUTION"
+            icon="heart"
+          />
 
-            <View style={styles.watchPill}>
-              <Ionicons
-                name="warning-outline"
-                size={12}
-                color="#B8754E"
-              />
-              <Text style={styles.watchText}>WATCH</Text>
-            </View>
+          <FamilyMember
+            name="Dad"
+            reason="High sugar for his profile"
+            status="WATCH"
+            icon="person"
+          />
+        </View>
+
+        {/* PERSONALIZED WARNING */}
+        <View style={styles.personalCard}>
+          <View style={styles.personalIcon}>
+            <Ionicons
+              name="bulb-outline"
+              size={21}
+              color="#287A45"
+            />
+          </View>
+
+          <View style={styles.personalText}>
+            <Text style={styles.personalTitle}>
+              Why this matters for your family
+            </Text>
+
+            <Text style={styles.personalBody}>
+              A product can have a reasonable overall
+              score but still be a poor fit for a specific
+              family member because of their allergies,
+              dietary restrictions, health considerations,
+              goals or preferences.
+            </Text>
           </View>
         </View>
 
-        {/* Alternative */}
-        <Text style={[styles.sectionTitle, styles.sectionSpacing]}>
-          A better choice
-        </Text>
-
-        <View style={styles.alternativeCard}>
-          <View style={styles.alternativeImage}>
-            <Text style={styles.alternativeEmoji}>🌾</Text>
-          </View>
-
-          <View style={styles.alternativeInfo}>
-            <Text style={styles.alternativeLabel}>
-              HIGHER FIBER · LOWER SUGAR
+        {/* BETTER ALTERNATIVES */}
+        <View style={styles.alternativeHeader}>
+          <View style={styles.alternativeHeaderText}>
+            <Text style={styles.sectionTitle}>
+              Better alternatives
             </Text>
 
-            <Text style={styles.alternativeName}>
-              Whole Grain Oat Bites
-            </Text>
-
-            <Text style={styles.alternativeText}>
-              A similar snack with a more balanced nutrition profile.
+            <Text style={styles.alternativeSubtitle}>
+              Personalized options that improve the
+              things that matter most.
             </Text>
           </View>
 
-          <View style={styles.alternativeScore}>
-            <Text style={styles.altScoreNumber}>84</Text>
-            <Text style={styles.altScoreLabel}>score</Text>
+          <View style={styles.alternativeIcon}>
+            <Ionicons
+              name="swap-horizontal-outline"
+              size={21}
+              color="#287A45"
+            />
           </View>
         </View>
 
-        {/* Actions */}
+        {alternatives.map((alternative, index) => (
+          <View
+            key={alternative.name}
+            style={[
+              styles.alternativeCard,
+              index === 0 &&
+                styles.featuredAlternative,
+            ]}
+          >
+            {index === 0 && (
+              <View style={styles.topAlternativeBadge}>
+                <Ionicons
+                  name="sparkles"
+                  size={12}
+                  color="#FFFFFF"
+                />
+
+                <Text style={styles.topAlternativeText}>
+                  TOP RECOMMENDATION
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.alternativeTop}>
+              <View style={styles.alternativeImage}>
+                <Text style={styles.alternativeEmoji}>
+                  🌾
+                </Text>
+              </View>
+
+              <View style={styles.alternativeInfo}>
+                <Text style={styles.alternativeBrand}>
+                  {alternative.brand}
+                </Text>
+
+                <Text style={styles.alternativeName}>
+                  {alternative.name}
+                </Text>
+
+                <Text style={styles.alternativeDescription}>
+                  {alternative.description}
+                </Text>
+              </View>
+
+              <View style={styles.alternativeScore}>
+                <Text style={styles.altScoreNumber}>
+                  {alternative.score}
+                </Text>
+
+                <Text style={styles.altScoreLabel}>
+                  score
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.tagRow}>
+              {alternative.tags.map((tag) => (
+                <View
+                  key={tag}
+                  style={styles.smallTag}
+                >
+                  <Text style={styles.smallTagText}>
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.improvementBox}>
+              <Text style={styles.improvementTitle}>
+                What improves
+              </Text>
+
+              {alternative.improvements.map(
+                (item) => (
+                  <View
+                    key={item}
+                    style={styles.improvementRow}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={15}
+                      color="#287A45"
+                    />
+
+                    <Text style={styles.improvementText}>
+                      {item}
+                    </Text>
+                  </View>
+                )
+              )}
+            </View>
+
+            <View style={styles.familyRecommendation}>
+              <Ionicons
+                name="people-outline"
+                size={17}
+                color="#287A45"
+              />
+
+              <Text style={styles.familyRecommendationText}>
+                {alternative.family}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        {/* COMPARE CTA */}
+        <View style={styles.compareCard}>
+          <View style={styles.compareIcon}>
+            <Ionicons
+              name="swap-horizontal-outline"
+              size={22}
+              color="#287A45"
+            />
+          </View>
+
+          <View style={styles.compareText}>
+            <Text style={styles.compareTitle}>
+              Want to see them side-by-side?
+            </Text>
+
+            <Text style={styles.compareSubtitle}>
+              Compare nutrition, ingredients and family
+              suitability.
+            </Text>
+          </View>
+
+          <Pressable
+            style={styles.compareButton}
+            onPress={() => router.push('/compare')}
+          >
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color="#FFFFFF"
+            />
+          </Pressable>
+        </View>
+
+        {/* ACTIONS */}
         <View style={styles.actions}>
           <Pressable
             style={styles.primaryButton}
@@ -336,7 +522,7 @@ export default function ResultScreen() {
             />
 
             <Text style={styles.primaryButtonText}>
-              Scan another
+              Scan another product
             </Text>
           </Pressable>
 
@@ -351,16 +537,199 @@ export default function ResultScreen() {
             />
 
             <Text style={styles.secondaryButtonText}>
-              Family details
+              Manage family profiles
             </Text>
           </Pressable>
         </View>
 
         <Text style={styles.footer}>
-          NutriSaathi · Understand your food. Choose what suits you.
+          NutriSaathi · Understand your food. Choose what
+          suits you.
         </Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ReasonRow({
+  type,
+  title,
+  text,
+}: {
+  type: 'good' | 'warning';
+  title: string;
+  text: string;
+}) {
+  return (
+    <View style={styles.reasonRow}>
+      <View
+        style={[
+          styles.reasonIcon,
+          type === 'warning' &&
+            styles.warningReasonIcon,
+        ]}
+      >
+        <Ionicons
+          name={
+            type === 'good'
+              ? 'checkmark'
+              : 'warning-outline'
+          }
+          size={17}
+          color={
+            type === 'good'
+              ? '#287A45'
+              : '#B8754E'
+          }
+        />
+      </View>
+
+      <View style={styles.reasonContent}>
+        <Text style={styles.reasonTitle}>
+          {title}
+        </Text>
+
+        <Text style={styles.reasonText}>
+          {text}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function NutritionCard({
+  value,
+  unit,
+  label,
+  warning = false,
+}: {
+  value: string;
+  unit: string;
+  label: string;
+  warning?: boolean;
+}) {
+  return (
+    <View style={styles.nutritionCard}>
+      <Text style={styles.nutritionValue}>
+        {value}
+      </Text>
+
+      <Text
+        style={[
+          styles.nutritionUnit,
+          warning && styles.warningNutrition,
+        ]}
+      >
+        {unit}
+      </Text>
+
+      <Text style={styles.nutritionLabel}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function IngredientTag({
+  text,
+  type,
+}: {
+  text: string;
+  type: 'good' | 'warning' | 'neutral';
+}) {
+  return (
+    <View
+      style={[
+        styles.ingredientTag,
+        type === 'good' && styles.goodTag,
+        type === 'warning' && styles.warningTag,
+        type === 'neutral' && styles.neutralTag,
+      ]}
+    >
+      <Text
+        style={[
+          styles.ingredientTagText,
+          type === 'good' && styles.goodTagText,
+          type === 'warning' &&
+            styles.warningTagText,
+          type === 'neutral' &&
+            styles.neutralTagText,
+        ]}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+function FamilyMember({
+  name,
+  reason,
+  status,
+  icon,
+}: {
+  name: string;
+  reason: string;
+  status: 'SAFE' | 'CAUTION' | 'WATCH';
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  const isSafe = status === 'SAFE';
+
+  return (
+    <View style={styles.familyMember}>
+      <View
+        style={[
+          styles.familyAvatar,
+          !isSafe && styles.familyAvatarWarning,
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={17}
+          color={isSafe ? '#287A45' : '#B8754E'}
+        />
+      </View>
+
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>
+          {name}
+        </Text>
+
+        <Text style={styles.memberReason}>
+          {reason}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.statusPill,
+          isSafe
+            ? styles.safePill
+            : styles.cautionPill,
+        ]}
+      >
+        <Ionicons
+          name={
+            isSafe
+              ? 'checkmark'
+              : 'warning-outline'
+          }
+          size={12}
+          color={isSafe ? '#287A45' : '#B8754E'}
+        />
+
+        <Text
+          style={[
+            styles.statusText,
+            isSafe
+              ? styles.safeText
+              : styles.cautionText,
+          ]}
+        >
+          {status}
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -396,7 +765,7 @@ const styles = StyleSheet.create({
 
   headerLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1.5,
     color: '#287A45',
   },
@@ -440,7 +809,7 @@ const styles = StyleSheet.create({
 
   brand: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1,
     color: '#6D8878',
     marginBottom: 5,
@@ -448,7 +817,7 @@ const styles = StyleSheet.create({
 
   productName: {
     fontSize: 19,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#173B2A',
   },
 
@@ -478,7 +847,7 @@ const styles = StyleSheet.create({
 
   scoreLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1.3,
     color: '#B9E6B7',
     marginBottom: 8,
@@ -501,7 +870,7 @@ const styles = StyleSheet.create({
 
   scoreNumber: {
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#173B2A',
   },
 
@@ -544,7 +913,7 @@ const styles = StyleSheet.create({
 
   verdictText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#287A45',
     marginLeft: 4,
   },
@@ -556,13 +925,8 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 21,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#173B2A',
-  },
-
-  sectionSpacing: {
-    marginTop: 27,
-    marginBottom: 12,
   },
 
   reasonCard: {
@@ -579,25 +943,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
 
-  reasonContent: {
-    flex: 1,
-    marginLeft: 11,
-  },
-
-  reasonTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#173B2A',
-  },
-
-  reasonText: {
-    fontSize: 10,
-    lineHeight: 15,
-    color: '#7B8981',
-    marginTop: 4,
-  },
-
-  goodIcon: {
+  reasonIcon: {
     width: 34,
     height: 34,
     borderRadius: 12,
@@ -606,13 +952,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  warningIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
+  warningReasonIcon: {
     backgroundColor: '#FFF0DD',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+
+  reasonContent: {
+    flex: 1,
+    marginLeft: 11,
+  },
+
+  reasonTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#173B2A',
+  },
+
+  reasonText: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#7B8981',
+    marginTop: 4,
   },
 
   divider: {
@@ -637,7 +996,7 @@ const styles = StyleSheet.create({
   nutritionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
   },
 
   nutritionCard: {
@@ -648,11 +1007,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderWidth: 1,
     borderColor: '#E4EAE3',
+    marginBottom: 10,
   },
 
   nutritionValue: {
     fontSize: 21,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#173B2A',
   },
 
@@ -663,17 +1023,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  highLabel: {
-    fontSize: 9,
-    fontWeight: '700',
+  warningNutrition: {
     color: '#B8754E',
-    marginTop: 2,
   },
 
   nutritionLabel: {
     fontSize: 10,
     color: '#89958E',
     marginTop: 11,
+  },
+
+  sectionSpacing: {
+    marginTop: 17,
+    marginBottom: 12,
   },
 
   ingredientCard: {
@@ -705,7 +1067,7 @@ const styles = StyleSheet.create({
 
   ingredientTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#173B2A',
   },
 
@@ -718,46 +1080,43 @@ const styles = StyleSheet.create({
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
     marginTop: 15,
+  },
+
+  ingredientTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 13,
+    marginRight: 7,
+    marginBottom: 7,
   },
 
   warningTag: {
     backgroundColor: '#FFF0DD',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 13,
-  },
-
-  warningTagText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#A66A43',
   },
 
   neutralTag: {
     backgroundColor: '#F0F3F0',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 13,
-  },
-
-  neutralTagText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#6F7C74',
   },
 
   goodTag: {
     backgroundColor: '#E8F4E7',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 13,
+  },
+
+  ingredientTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+
+  warningTagText: {
+    color: '#A66A43',
+  },
+
+  neutralTagText: {
+    color: '#6F7C74',
   },
 
   goodTagText: {
-    fontSize: 9,
-    fontWeight: '700',
     color: '#287A45',
   },
 
@@ -781,7 +1140,7 @@ const styles = StyleSheet.create({
 
   familyLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1.3,
     color: '#B9E6B7',
     marginBottom: 7,
@@ -790,7 +1149,7 @@ const styles = StyleSheet.create({
   familyTitle: {
     fontSize: 19,
     lineHeight: 25,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 
@@ -813,7 +1172,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  youAvatar: {
+  familyAvatar: {
     width: 39,
     height: 39,
     borderRadius: 14,
@@ -823,24 +1182,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 
-  momAvatar: {
-    width: 39,
-    height: 39,
-    borderRadius: 14,
+  familyAvatarWarning: {
     backgroundColor: '#FFF0DD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  dadAvatar: {
-    width: 39,
-    height: 39,
-    borderRadius: 14,
-    backgroundColor: '#E4F0F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
   },
 
   memberInfo: {
@@ -849,7 +1192,7 @@ const styles = StyleSheet.create({
 
   memberName: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 
@@ -859,111 +1202,183 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  safePill: {
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F4E7',
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 12,
   },
 
-  safeText: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#287A45',
-    marginLeft: 3,
+  safePill: {
+    backgroundColor: '#E8F4E7',
   },
 
   cautionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFF0DD',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
+  },
+
+  statusText: {
+    fontSize: 8,
+    fontWeight: '700',
+    marginLeft: 3,
+  },
+
+  safeText: {
+    color: '#287A45',
   },
 
   cautionText: {
-    fontSize: 8,
-    fontWeight: '800',
     color: '#A66A43',
-    marginLeft: 3,
   },
 
-  watchPill: {
+  personalCard: {
+    flexDirection: 'row',
+    backgroundColor: '#EAF5ED',
+    borderRadius: 18,
+    padding: 15,
+    marginTop: 15,
+    marginBottom: 25,
+  },
+
+  personalIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  personalText: {
+    flex: 1,
+  },
+
+  personalTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#285333',
+    marginBottom: 4,
+  },
+
+  personalBody: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: '#617367',
+  },
+
+  alternativeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF0DD',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
+    marginBottom: 12,
   },
 
-  watchText: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#A66A43',
-    marginLeft: 3,
+  alternativeHeaderText: {
+    flex: 1,
+  },
+
+  alternativeSubtitle: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: '#87938C',
+    marginTop: 3,
+  },
+
+  alternativeIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: '#EAF5ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
   },
 
   alternativeCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 23,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E4EAE3',
+    marginBottom: 12,
+  },
+
+  featuredAlternative: {
+    borderColor: '#AFCDB6',
+  },
+
+  topAlternativeBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#287A45',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+
+  topAlternativeText: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    color: '#FFFFFF',
+    marginLeft: 4,
+  },
+
+  alternativeTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   alternativeImage: {
-    width: 65,
-    height: 65,
-    borderRadius: 19,
+    width: 58,
+    height: 58,
+    borderRadius: 17,
     backgroundColor: '#E9F0E2',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 11,
   },
 
   alternativeEmoji: {
-    fontSize: 34,
+    fontSize: 30,
   },
 
   alternativeInfo: {
     flex: 1,
+    marginLeft: 10,
+    marginRight: 6,
   },
 
-  alternativeLabel: {
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: '#4E9565',
-    marginBottom: 5,
+  alternativeBrand: {
+    fontSize: 8.5,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    color: '#6D8878',
   },
 
   alternativeName: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#173B2A',
+    marginTop: 3,
   },
 
-  alternativeText: {
-    fontSize: 9,
-    lineHeight: 14,
+  alternativeDescription: {
+    fontSize: 10,
+    lineHeight: 15,
     color: '#89958E',
     marginTop: 4,
   },
 
   alternativeScore: {
     alignItems: 'center',
-    marginLeft: 7,
   },
 
   altScoreNumber: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 21,
+    fontWeight: '700',
     color: '#287A45',
   },
 
@@ -972,9 +1387,110 @@ const styles = StyleSheet.create({
     color: '#89958E',
   },
 
+  smallTag: {
+    backgroundColor: '#F0F6F1',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginRight: 5,
+    marginBottom: 5,
+  },
+
+  smallTagText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#3D6148',
+  },
+
+  improvementBox: {
+    backgroundColor: '#F7FAF7',
+    borderRadius: 13,
+    padding: 11,
+    marginTop: 7,
+  },
+
+  improvementTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#526157',
+    marginBottom: 5,
+  },
+
+  improvementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+
+  improvementText: {
+    fontSize: 10.5,
+    color: '#65736A',
+    marginLeft: 6,
+  },
+
+  familyRecommendation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 11,
+  },
+
+  familyRecommendationText: {
+    flex: 1,
+    fontSize: 10.5,
+    color: '#5F7065',
+    marginLeft: 6,
+  },
+
+  compareCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#DCE7DE',
+    padding: 14,
+    marginTop: 7,
+  },
+
+  compareIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: '#EAF5ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  compareText: {
+    flex: 1,
+    marginLeft: 10,
+    marginRight: 8,
+  },
+
+  compareTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#29402F',
+  },
+
+  compareSubtitle: {
+    fontSize: 10.5,
+    color: '#89958E',
+    marginTop: 3,
+    lineHeight: 15,
+  },
+
+  compareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: '#287A45',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   actions: {
     marginTop: 18,
-    gap: 9,
   },
 
   primaryButton: {
@@ -984,13 +1500,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
 
   primaryButtonText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
+    marginLeft: 8,
   },
 
   secondaryButton: {
@@ -1000,13 +1516,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    marginTop: 9,
   },
 
   secondaryButtonText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#287A45',
+    marginLeft: 7,
   },
 
   footer: {

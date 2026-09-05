@@ -24,18 +24,16 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Good to see you.</Text>
           </View>
 
-          <View style={styles.headerButtons}>
-            <Pressable
-              style={styles.headerCircle}
-              onPress={() => router.push('/profile')}
-            >
-              <Ionicons
-                name="person-outline"
-                size={22}
-                color="#173B2A"
-              />
-            </Pressable>
-          </View>
+          <Pressable
+            style={styles.headerCircle}
+            onPress={() => router.push('/profile')}
+          >
+            <Ionicons
+              name="person-outline"
+              size={22}
+              color="#173B2A"
+            />
+          </Pressable>
         </View>
 
         {/* Hero */}
@@ -139,6 +137,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Your toolkit</Text>
+
             <Text style={styles.sectionSubtitle}>
               Everything you need to choose smarter.
             </Text>
@@ -146,7 +145,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.toolkitRow}>
-          {/* Family */}
+          {/* Family Mode */}
           <Pressable
             style={styles.toolCard}
             onPress={() => router.push('/family')}
@@ -174,10 +173,10 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
-          {/* Compare */}
+          {/* Compare Products */}
           <Pressable
             style={styles.toolCard}
-            onPress={() => router.push('/explore')}
+            onPress={() => router.push('/compare')}
           >
             <View style={styles.toolIcon}>
               <Ionicons
@@ -203,6 +202,50 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {/* ASK NUTRISAATHI */}
+        <Pressable
+          style={styles.chatCard}
+          onPress={() => router.push('/chat')}
+        >
+          <View style={styles.chatIcon}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={25}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View style={styles.chatContent}>
+            <View style={styles.chatTitleRow}>
+              <Text style={styles.chatTitle}>
+                Ask NutriSaathi
+              </Text>
+
+              <View style={styles.aiBadge}>
+                <Ionicons
+                  name="sparkles"
+                  size={10}
+                  color="#287A45"
+                />
+                <Text style={styles.aiBadgeText}>AI HELPER</Text>
+              </View>
+            </View>
+
+            <Text style={styles.chatText}>
+              Confused about an ingredient, nutrition label,
+              or food choice? Ask me.
+            </Text>
+          </View>
+
+          <View style={styles.chatArrow}>
+            <Ionicons
+              name="arrow-forward"
+              size={19}
+              color="#287A45"
+            />
+          </View>
+        </Pressable>
+
         {/* Daily Insight */}
         <View style={styles.insightBanner}>
           <View style={styles.insightBannerIcon}>
@@ -225,7 +268,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Bottom message */}
+        {/* Bottom Message */}
         <View style={styles.bottomMessage}>
           <Ionicons
             name="leaf-outline"
@@ -273,11 +316,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#173B2A',
-  },
-
-  headerButtons: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   headerCircle: {
@@ -519,6 +557,79 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 15,
     bottom: 15,
+  },
+
+  /* Chatbot card */
+  chatCard: {
+    marginTop: 14,
+    backgroundColor: '#173B2A',
+    borderRadius: 24,
+    padding: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 112,
+  },
+
+  chatIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 17,
+    backgroundColor: '#287A45',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+  },
+
+  chatContent: {
+    flex: 1,
+  },
+
+  chatTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+
+  chatTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DFF3DE',
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    gap: 3,
+  },
+
+  aiBadgeText: {
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+    color: '#287A45',
+  },
+
+  chatText: {
+    fontSize: 10,
+    lineHeight: 16,
+    color: '#C8D9CE',
+    marginTop: 7,
+    paddingRight: 4,
+  },
+
+  chatArrow: {
+    width: 37,
+    height: 37,
+    borderRadius: 19,
+    backgroundColor: '#E8F4E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
 
   insightBanner: {
