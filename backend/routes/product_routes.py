@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from services.off_service import get_product_by_barcode
+from backend.services.off_service import get_product_by_barcode
 
 
 product_bp = Blueprint("products", __name__)

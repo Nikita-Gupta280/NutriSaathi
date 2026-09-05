@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from analysis_engine import analyze_product
+from backend.analysis_engine import analyze_product
 
 
 analysis_bp = Blueprint("analysis", __name__)
