@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -21,6 +22,8 @@ type InputMethod =
   | 'ingredients'
   | 'nutrition';
 
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
+
 export default function ScanScreen() {
   const [selectedMethod, setSelectedMethod] =
     useState<InputMethod | null>(null);
@@ -39,12 +42,38 @@ export default function ScanScreen() {
 
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [cameraMode, setCameraMode] = useState<'barcode' | 'label'>(
-    'barcode'
-  );
+  const [cameraMode, setCameraMode] = useState<'barcode' | 'label'>('barcode');
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
+
+  const ensureApiUrl = () => {
+    if (!API_BASE_URL) {
+      Alert.alert(
+        'Backend URL missing',
+        'Please set EXPO_PUBLIC_API_URL in frontend/.env and restart Expo.'
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const goToResult = (payload: unknown, scannedBarcode = '') => {
+    router.push({
+      pathname: '/result',
+      params: {
+        api_response: JSON.stringify(payload),
+        barcode: scannedBarcode,
+      },
+    });
+  };
+
+  const getErrorMessage = (payload: any, fallback: string) => {
+    if (payload && typeof payload.error === 'string') return payload.error;
+    if (payload && typeof payload.message === 'string') return payload.message;
+    return fallback;
+  };
 
   const openCamera = async (mode: 'barcode' | 'label') => {
     if (!permission?.granted) {
@@ -64,98 +93,153 @@ export default function ScanScreen() {
     setCameraOpen(true);
   };
 
-  const handleBarcodeScanned = ({
-    data,
-  }: {
-    data: string;
-    type: string;
-  }) => {
-    if (scanned) return;
+  const fetchBarcodeProduct = async (value: string) => {
+    const cleanBarcode = value.trim();
+
+    if (!cleanBarcode) {
+      Alert.alert('Enter barcode', 'Please enter a barcode number first.');
+      return;
+    }
+
+    if (!ensureApiUrl()) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/scan/barcode`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          barcode: cleanBarcode,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(data, `Barcode lookup failed (${response.status}).`)
+        );
+      }
+
+      if (data?.success === false) {
+        throw new Error(
+          getErrorMessage(data, 'No product was found for this barcode.')
+        );
+      }
+
+      goToResult(data, cleanBarcode);
+    } catch (error) {
+      Alert.alert(
+        'Could not analyze barcode',
+        error instanceof Error
+          ? error.message
+          : 'Please check the barcode and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBarcodeScanned = ({ data }: { data: string; type: string }) => {
+    if (scanned || loading || !data) return;
 
     setScanned(true);
     setBarcode(data);
     setCameraOpen(false);
 
-    Alert.alert(
-      'Barcode detected',
-      `Barcode: ${data}`,
-      [
+    void fetchBarcodeProduct(data);
+  };
+
+  const sendOcrImage = async (uri: string) => {
+    if (!ensureApiUrl()) return;
+
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        'image',
         {
-          text: 'Continue',
-          onPress: () => {
-            setSelectedMethod('barcode');
-          },
-        },
-      ],
-      { cancelable: false }
-    );
+          uri,
+          name: `food-label-${Date.now()}.jpg`,
+          type: 'image/jpeg',
+        } as any
+      );
+
+      const response = await fetch(`${API_BASE_URL}/api/scan/ocr`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(data, `OCR analysis failed (${response.status}).`)
+        );
+      }
+
+      if (data?.success === false) {
+        throw new Error(
+          getErrorMessage(data, 'The food label could not be analyzed.')
+        );
+      }
+
+      goToResult(data);
+    } catch (error) {
+      Alert.alert(
+        'Could not analyze food label',
+        error instanceof Error
+          ? error.message
+          : 'Please use a clearer food-label image and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const captureLabel = async () => {
     try {
       if (!cameraRef.current) return;
 
-      await cameraRef.current.takePictureAsync({
+      const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
       });
 
-      setCameraOpen(false);
+      if (!photo?.uri) {
+        throw new Error('No image was captured.');
+      }
 
-      Alert.alert(
-        'Food label captured',
-        'The image is ready to be connected to NutriSaathi OCR analysis.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => setSelectedMethod('camera'),
-          },
-        ]
-      );
-    } catch {
+      setCameraOpen(false);
+      await sendOcrImage(photo.uri);
+    } catch (error) {
       Alert.alert(
         'Capture failed',
-        'We could not capture the food label. Please try again.'
+        error instanceof Error
+          ? error.message
+          : 'We could not capture the food label. Please try again.'
       );
     }
   };
 
   const openGallery = async () => {
-    const result =
-      await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: false,
-        quality: 1,
-      });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+    });
 
-    if (!result.canceled) {
-      Alert.alert(
-        'Image selected',
-        'Your food image is ready to be connected to NutriSaathi OCR analysis.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => setSelectedMethod('gallery'),
-          },
-        ]
-      );
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      await sendOcrImage(result.assets[0].uri);
     }
   };
 
   const analyzeBarcode = () => {
-    if (!barcode.trim()) {
-      Alert.alert(
-        'Enter barcode',
-        'Please enter a barcode number first.'
-      );
-      return;
-    }
-
-    router.push({
-      pathname: '/result',
-      params: {
-        barcode: barcode.trim(),
-      },
-    });
+    void fetchBarcodeProduct(barcode);
   };
 
   const analyzeIngredients = () => {
@@ -168,8 +252,8 @@ export default function ScanScreen() {
     }
 
     Alert.alert(
-      'Ingredients added',
-      'Your ingredients are ready for NutriSaathi analysis.'
+      'Coming next',
+      'Ingredient-only analysis is not connected to the backend endpoint yet.'
     );
   };
 
@@ -187,8 +271,8 @@ export default function ScanScreen() {
     }
 
     Alert.alert(
-      'Nutrition added',
-      'Your nutrition information is ready for NutriSaathi analysis.'
+      'Coming next',
+      'Nutrition-only analysis is not connected to the backend endpoint yet.'
     );
   };
 
@@ -196,7 +280,6 @@ export default function ScanScreen() {
     setSelectedMethod(null);
     setBarcode('');
     setIngredients('');
-
     setNutrition({
       calories: '',
       sugar: '',
@@ -206,8 +289,6 @@ export default function ScanScreen() {
       sodium: '',
     });
   };
-
-  /* ================= CAMERA ================= */
 
   if (cameraOpen) {
     return (
@@ -220,20 +301,6 @@ export default function ScanScreen() {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
-            barcodeScannerSettings={
-              cameraMode === 'barcode'
-                ? {
-                    barcodeTypes: [
-                      'ean13',
-                      'ean8',
-                      'upc_a',
-                      'upc_e',
-                      'code128',
-                      'code39',
-                    ],
-                  }
-                : undefined
-            }
             onBarcodeScanned={
               cameraMode === 'barcode' && !scanned
                 ? handleBarcodeScanned
@@ -246,12 +313,9 @@ export default function ScanScreen() {
               <Pressable
                 style={styles.closeButton}
                 onPress={() => setCameraOpen(false)}
+                disabled={loading}
               >
-                <Ionicons
-                  name="close"
-                  size={27}
-                  color="#FFFFFF"
-                />
+                <Ionicons name="close" size={27} color="#FFFFFF" />
               </Pressable>
 
               <Text style={styles.cameraTitle}>
@@ -280,10 +344,8 @@ export default function ScanScreen() {
                     size={48}
                     color="#FFFFFF"
                   />
-
                   <Text style={styles.labelGuideText}>
-                    Fit the ingredient or nutrition label inside
-                    the frame
+                    Fit the ingredient or nutrition label inside the frame
                   </Text>
                 </View>
               )}
@@ -292,30 +354,49 @@ export default function ScanScreen() {
             <View style={styles.cameraBottom}>
               <Text style={styles.cameraInstruction}>
                 {cameraMode === 'barcode'
-                  ? 'Point at a barcode, or tap the button to take a label photo'
+                  ? 'Point your camera at any supported barcode'
                   : 'Capture a clear photo of the food label'}
               </Text>
 
               <Text style={styles.cameraHint}>
-                Good lighting gives better results
+                {cameraMode === 'barcode'
+                  ? 'The product will be looked up automatically'
+                  : 'Good lighting gives better OCR results'}
               </Text>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Take picture"
-                style={styles.captureButton}
-                onPress={captureLabel}
-              >
-                <View style={styles.captureInner} />
-              </Pressable>
+              {cameraMode === 'label' && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Take picture"
+                  style={styles.captureButton}
+                  onPress={captureLabel}
+                  disabled={loading}
+                >
+                  <View style={styles.captureInner} />
+                </Pressable>
+              )}
             </View>
           </View>
+
+          {loading && (
+            <View style={styles.cameraLoading}>
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="large" color="#287A45" />
+                <Text style={styles.loadingTitle}>
+                  {cameraMode === 'barcode'
+                    ? 'Looking up product…'
+                    : 'Reading food label…'}
+                </Text>
+                <Text style={styles.loadingText}>
+                  Please wait while NutriSaathi analyzes it.
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </SafeAreaView>
     );
   }
-
-  /* ================= MAIN SCREEN ================= */
 
   return (
     <SafeAreaView
@@ -328,16 +409,10 @@ export default function ScanScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* HEADER */}
-
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.brand}>NUTRISAATHI</Text>
-
-            <Text style={styles.title}>
-              Scan your food
-            </Text>
-
+            <Text style={styles.title}>Scan your food</Text>
             <Text style={styles.subtitle}>
               Choose how you'd like to add your product.
             </Text>
@@ -352,61 +427,40 @@ export default function ScanScreen() {
           </View>
         </View>
 
-        {/* DEFAULT METHOD SELECTION */}
-
         {!selectedMethod && (
           <>
             <View style={styles.introCard}>
               <View style={styles.introIcon}>
-                <Ionicons
-                  name="sparkles"
-                  size={25}
-                  color="#287A45"
-                />
+                <Ionicons name="sparkles" size={25} color="#287A45" />
               </View>
 
               <View style={styles.introContent}>
-                <Text style={styles.introTitle}>
-                  Add a product
-                </Text>
-
+                <Text style={styles.introTitle}>Add a product</Text>
                 <Text style={styles.introText}>
-                  Scan, upload, paste or enter the information
-                  available on your food package.
+                  Scan, upload, paste or enter the information available on
+                  your food package.
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.sectionTitle}>
-              Choose an input method
-            </Text>
-
-            {/* CAMERA */}
+            <Text style={styles.sectionTitle}>Choose an input method</Text>
 
             <Pressable
               style={styles.methodCard}
               onPress={() => openCamera('barcode')}
             >
-              <View
-                style={[
-                  styles.methodIcon,
-                  styles.greenMethodIcon,
-                ]}
-              >
+              <View style={[styles.methodIcon, styles.greenMethodIcon]}>
                 <Ionicons
-                  name="camera-outline"
+                  name="barcode-outline"
                   size={27}
                   color="#287A45"
                 />
               </View>
 
               <View style={styles.methodContent}>
-                <Text style={styles.methodTitle}>
-                  Scan with camera
-                </Text>
-
+                <Text style={styles.methodTitle}>Scan barcode</Text>
                 <Text style={styles.methodText}>
-                  Scan a barcode or capture a food label.
+                  Point your camera at the product barcode.
                 </Text>
               </View>
 
@@ -417,18 +471,11 @@ export default function ScanScreen() {
               />
             </Pressable>
 
-            {/* GALLERY */}
-
             <Pressable
               style={styles.methodCard}
               onPress={openGallery}
             >
-              <View
-                style={[
-                  styles.methodIcon,
-                  styles.blueMethodIcon,
-                ]}
-              >
+              <View style={[styles.methodIcon, styles.blueMethodIcon]}>
                 <Ionicons
                   name="images-outline"
                   size={27}
@@ -437,13 +484,9 @@ export default function ScanScreen() {
               </View>
 
               <View style={styles.methodContent}>
-                <Text style={styles.methodTitle}>
-                  Upload from gallery
-                </Text>
-
+                <Text style={styles.methodTitle}>Upload food label</Text>
                 <Text style={styles.methodText}>
-                  Choose a barcode, ingredient or nutrition-label
-                  photo.
+                  Upload a product or nutrition-label photo for OCR.
                 </Text>
               </View>
 
@@ -454,32 +497,22 @@ export default function ScanScreen() {
               />
             </Pressable>
 
-            {/* BARCODE */}
-
             <Pressable
               style={styles.methodCard}
               onPress={() => setSelectedMethod('barcode')}
             >
-              <View
-                style={[
-                  styles.methodIcon,
-                  styles.peachMethodIcon,
-                ]}
-              >
+              <View style={[styles.methodIcon, styles.peachMethodIcon]}>
                 <Ionicons
-                  name="barcode-outline"
+                  name="create-outline"
                   size={27}
                   color="#A87436"
                 />
               </View>
 
               <View style={styles.methodContent}>
-                <Text style={styles.methodTitle}>
-                  Enter barcode
-                </Text>
-
+                <Text style={styles.methodTitle}>Enter barcode</Text>
                 <Text style={styles.methodText}>
-                  Type the product barcode number manually.
+                  Type any product barcode manually.
                 </Text>
               </View>
 
@@ -490,20 +523,11 @@ export default function ScanScreen() {
               />
             </Pressable>
 
-            {/* INGREDIENTS */}
-
             <Pressable
               style={styles.methodCard}
-              onPress={() =>
-                setSelectedMethod('ingredients')
-              }
+              onPress={() => openCamera('label')}
             >
-              <View
-                style={[
-                  styles.methodIcon,
-                  styles.lilacMethodIcon,
-                ]}
-              >
+              <View style={[styles.methodIcon, styles.lilacMethodIcon]}>
                 <Ionicons
                   name="document-text-outline"
                   size={27}
@@ -512,13 +536,9 @@ export default function ScanScreen() {
               </View>
 
               <View style={styles.methodContent}>
-                <Text style={styles.methodTitle}>
-                  Paste ingredients
-                </Text>
-
+                <Text style={styles.methodTitle}>Food Label / OCR</Text>
                 <Text style={styles.methodText}>
-                  Copy the ingredient list directly from the package
-                  or another source.
+                  Capture the ingredient or nutrition label with the camera.
                 </Text>
               </View>
 
@@ -529,20 +549,37 @@ export default function ScanScreen() {
               />
             </Pressable>
 
-            {/* NUTRITION */}
+            <Pressable
+              style={styles.methodCard}
+              onPress={() => setSelectedMethod('ingredients')}
+            >
+              <View style={[styles.methodIcon, styles.lilacMethodIcon]}>
+                <Ionicons
+                  name="list-outline"
+                  size={27}
+                  color="#816A91"
+                />
+              </View>
+
+              <View style={styles.methodContent}>
+                <Text style={styles.methodTitle}>Paste ingredients</Text>
+                <Text style={styles.methodText}>
+                  Copy the ingredient list directly from the package.
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={21}
+                color="#91A097"
+              />
+            </Pressable>
 
             <Pressable
               style={styles.methodCard}
-              onPress={() =>
-                setSelectedMethod('nutrition')
-              }
+              onPress={() => setSelectedMethod('nutrition')}
             >
-              <View
-                style={[
-                  styles.methodIcon,
-                  styles.yellowMethodIcon,
-                ]}
-              >
+              <View style={[styles.methodIcon, styles.yellowMethodIcon]}>
                 <Ionicons
                   name="nutrition-outline"
                   size={27}
@@ -554,10 +591,8 @@ export default function ScanScreen() {
                 <Text style={styles.methodTitle}>
                   Enter nutrition values
                 </Text>
-
                 <Text style={styles.methodText}>
-                  Add calories, sugar, protein, fat, fiber and
-                  sodium manually.
+                  Add calories, sugar, protein, fat, fiber and sodium manually.
                 </Text>
               </View>
 
@@ -570,23 +605,11 @@ export default function ScanScreen() {
           </>
         )}
 
-        {/* BARCODE */}
-
         {selectedMethod === 'barcode' && (
           <View style={styles.inputSection}>
-            <Pressable
-              style={styles.backLink}
-              onPress={resetSelection}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={20}
-                color="#287A45"
-              />
-
-              <Text style={styles.backText}>
-                Choose another method
-              </Text>
+            <Pressable style={styles.backLink} onPress={resetSelection}>
+              <Ionicons name="arrow-back" size={20} color="#287A45" />
+              <Text style={styles.backText}>Choose another method</Text>
             </Pressable>
 
             <View style={styles.inputHero}>
@@ -598,41 +621,47 @@ export default function ScanScreen() {
                 />
               </View>
 
-              <Text style={styles.inputHeroTitle}>
-                Enter product barcode
-              </Text>
-
+              <Text style={styles.inputHeroTitle}>Enter product barcode</Text>
               <Text style={styles.inputHeroText}>
                 Type the number printed below the barcode.
               </Text>
             </View>
 
-            <Text style={styles.fieldLabel}>
-              Barcode number
-            </Text>
+            <Text style={styles.fieldLabel}>Barcode number</Text>
 
             <TextInput
               value={barcode}
               onChangeText={setBarcode}
-              placeholder="e.g. 8901234567890"
+              placeholder="e.g. 3017620422003"
               placeholderTextColor="#A0AAA4"
               keyboardType="number-pad"
               style={styles.textInput}
+              editable={!loading}
+              autoCapitalize="none"
             />
 
             <Pressable
-              style={styles.primaryButton}
+              style={[
+                styles.primaryButton,
+                loading && styles.disabledButton,
+              ]}
               onPress={analyzeBarcode}
+              disabled={loading}
             >
-              <Text style={styles.primaryButtonText}>
-                Analyze product
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={22}
-                color="#FFFFFF"
-              />
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>
+                    Analyze product
+                  </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={22}
+                    color="#FFFFFF"
+                  />
+                </>
+              )}
             </Pressable>
 
             <Text style={styles.orText}>OR</Text>
@@ -640,13 +669,13 @@ export default function ScanScreen() {
             <Pressable
               style={styles.secondaryButton}
               onPress={() => openCamera('barcode')}
+              disabled={loading}
             >
               <Ionicons
                 name="camera-outline"
                 size={21}
                 color="#287A45"
               />
-
               <Text style={styles.secondaryButtonText}>
                 Scan barcode with camera
               </Text>
@@ -654,23 +683,11 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {/* INGREDIENTS */}
-
         {selectedMethod === 'ingredients' && (
           <View style={styles.inputSection}>
-            <Pressable
-              style={styles.backLink}
-              onPress={resetSelection}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={20}
-                color="#287A45"
-              />
-
-              <Text style={styles.backText}>
-                Choose another method
-              </Text>
+            <Pressable style={styles.backLink} onPress={resetSelection}>
+              <Ionicons name="arrow-back" size={20} color="#287A45" />
+              <Text style={styles.backText}>Choose another method</Text>
             </Pressable>
 
             <View style={styles.inputHero}>
@@ -682,19 +699,13 @@ export default function ScanScreen() {
                 />
               </View>
 
-              <Text style={styles.inputHeroTitle}>
-                Paste ingredients
-              </Text>
-
+              <Text style={styles.inputHeroTitle}>Paste ingredients</Text>
               <Text style={styles.inputHeroText}>
-                Copy the ingredient list from the package and paste
-                it below.
+                Copy the ingredient list from the package and paste it below.
               </Text>
             </View>
 
-            <Text style={styles.fieldLabel}>
-              Ingredient list
-            </Text>
+            <Text style={styles.fieldLabel}>Ingredient list</Text>
 
             <TextInput
               value={ingredients}
@@ -703,10 +714,7 @@ export default function ScanScreen() {
               placeholderTextColor="#A0AAA4"
               multiline
               textAlignVertical="top"
-              style={[
-                styles.textInput,
-                styles.ingredientsInput,
-              ]}
+              style={[styles.textInput, styles.ingredientsInput]}
             />
 
             <Pressable
@@ -716,7 +724,6 @@ export default function ScanScreen() {
               <Text style={styles.primaryButtonText}>
                 Analyze ingredients
               </Text>
-
               <Ionicons
                 name="arrow-forward"
                 size={22}
@@ -726,23 +733,11 @@ export default function ScanScreen() {
           </View>
         )}
 
-        {/* NUTRITION */}
-
         {selectedMethod === 'nutrition' && (
           <View style={styles.inputSection}>
-            <Pressable
-              style={styles.backLink}
-              onPress={resetSelection}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={20}
-                color="#287A45"
-              />
-
-              <Text style={styles.backText}>
-                Choose another method
-              </Text>
+            <Pressable style={styles.backLink} onPress={resetSelection}>
+              <Ionicons name="arrow-back" size={20} color="#287A45" />
+              <Text style={styles.backText}>Choose another method</Text>
             </Pressable>
 
             <View style={styles.inputHero}>
@@ -757,7 +752,6 @@ export default function ScanScreen() {
               <Text style={styles.inputHeroTitle}>
                 Enter nutrition values
               </Text>
-
               <Text style={styles.inputHeroText}>
                 Add the values shown on the nutrition label.
               </Text>
@@ -769,70 +763,47 @@ export default function ScanScreen() {
                 unit="kcal"
                 value={nutrition.calories}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    calories: value,
-                  })
+                  setNutrition({ ...nutrition, calories: value })
                 }
               />
-
               <NutritionInput
                 label="Sugar"
                 unit="g"
                 value={nutrition.sugar}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    sugar: value,
-                  })
+                  setNutrition({ ...nutrition, sugar: value })
                 }
               />
-
               <NutritionInput
                 label="Protein"
                 unit="g"
                 value={nutrition.protein}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    protein: value,
-                  })
+                  setNutrition({ ...nutrition, protein: value })
                 }
               />
-
               <NutritionInput
                 label="Fat"
                 unit="g"
                 value={nutrition.fat}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    fat: value,
-                  })
+                  setNutrition({ ...nutrition, fat: value })
                 }
               />
-
               <NutritionInput
                 label="Fiber"
                 unit="g"
                 value={nutrition.fiber}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    fiber: value,
-                  })
+                  setNutrition({ ...nutrition, fiber: value })
                 }
               />
-
               <NutritionInput
                 label="Sodium"
                 unit="mg"
                 value={nutrition.sodium}
                 onChangeText={(value) =>
-                  setNutrition({
-                    ...nutrition,
-                    sodium: value,
-                  })
+                  setNutrition({ ...nutrition, sodium: value })
                 }
               />
             </View>
@@ -844,7 +815,6 @@ export default function ScanScreen() {
               <Text style={styles.primaryButtonText}>
                 Analyze nutrition
               </Text>
-
               <Ionicons
                 name="arrow-forward"
                 size={22}
@@ -853,85 +823,6 @@ export default function ScanScreen() {
             </Pressable>
           </View>
         )}
-
-        {/* CAMERA RESULT */}
-
-        {selectedMethod === 'camera' && (
-          <View style={styles.successCard}>
-            <View style={styles.successIcon}>
-              <Ionicons
-                name="checkmark-circle"
-                size={34}
-                color="#287A45"
-              />
-            </View>
-
-            <Text style={styles.successTitle}>
-              Food label captured
-            </Text>
-
-            <Text style={styles.successText}>
-              The label image is ready. The next step is connecting
-              it to NutriSaathi's OCR and analysis service.
-            </Text>
-
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => openCamera('label')}
-            >
-              <Text style={styles.primaryButtonText}>
-                Capture again
-              </Text>
-
-              <Ionicons
-                name="camera-outline"
-                size={22}
-                color="#FFFFFF"
-              />
-            </Pressable>
-          </View>
-        )}
-
-        {/* GALLERY RESULT */}
-
-        {selectedMethod === 'gallery' && (
-          <View style={styles.successCard}>
-            <View style={styles.successIcon}>
-              <Ionicons
-                name="image"
-                size={32}
-                color="#287A45"
-              />
-            </View>
-
-            <Text style={styles.successTitle}>
-              Image selected
-            </Text>
-
-            <Text style={styles.successText}>
-              Your product image is ready. The next step is
-              connecting it to NutriSaathi's OCR and analysis
-              service.
-            </Text>
-
-            <Pressable
-              style={styles.primaryButton}
-              onPress={openGallery}
-            >
-              <Text style={styles.primaryButtonText}>
-                Choose another image
-              </Text>
-
-              <Ionicons
-                name="images-outline"
-                size={22}
-                color="#FFFFFF"
-              />
-            </Pressable>
-          </View>
-        )}
-
-        {/* TIP */}
 
         <View style={styles.tipCard}>
           <View style={styles.tipIcon}>
@@ -946,11 +837,9 @@ export default function ScanScreen() {
             <Text style={styles.tipTitle}>
               One product. Multiple ways to analyze.
             </Text>
-
             <Text style={styles.tipText}>
-              Use whatever information is available on your
-              package. NutriSaathi will turn it into simple,
-              personalized food insights.
+              Barcode lookup and food-label OCR are connected to the NutriSaathi
+              backend. The result screen uses the actual API response.
             </Text>
           </View>
         </View>
@@ -960,8 +849,6 @@ export default function ScanScreen() {
     </SafeAreaView>
   );
 }
-
-/* ================= NUTRITION INPUT ================= */
 
 function NutritionInput({
   label,
@@ -987,43 +874,35 @@ function NutritionInput({
           keyboardType="decimal-pad"
           style={styles.nutritionInput}
         />
-
         <Text style={styles.unitText}>{unit}</Text>
       </View>
     </View>
   );
 }
 
-/* ================= STYLES ================= */
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8FAF6',
   },
-
   scrollView: {
     flex: 1,
   },
-
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
   },
-
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 23,
   },
-
   headerText: {
     flex: 1,
     paddingRight: 15,
   },
-
   brand: {
     fontSize: 14,
     letterSpacing: 2.2,
@@ -1031,21 +910,18 @@ const styles = StyleSheet.create({
     color: '#287A45',
     marginBottom: 6,
   },
-
   title: {
     fontSize: 34,
     fontWeight: '700',
     color: '#173C2A',
     letterSpacing: -0.8,
   },
-
   subtitle: {
     marginTop: 7,
     fontSize: 15,
     lineHeight: 22,
     color: '#7C8B82',
   },
-
   headerIcon: {
     width: 58,
     height: 58,
@@ -1054,7 +930,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   introCard: {
     backgroundColor: '#205F47',
     borderRadius: 29,
@@ -1063,7 +938,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 25,
   },
-
   introIcon: {
     width: 52,
     height: 52,
@@ -1073,31 +947,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 15,
   },
-
   introContent: {
     flex: 1,
   },
-
   introTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 5,
   },
-
   introText: {
     fontSize: 12,
     lineHeight: 18,
     color: '#D8E9DC',
   },
-
   sectionTitle: {
     fontSize: 23,
     fontWeight: '700',
     color: '#173C2A',
     marginBottom: 14,
   },
-
   methodCard: {
     minHeight: 82,
     backgroundColor: '#FFFFFF',
@@ -1110,7 +979,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-
   methodIcon: {
     width: 53,
     height: 53,
@@ -1119,303 +987,229 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
-
   greenMethodIcon: {
     backgroundColor: '#DDF0D9',
   },
-
   blueMethodIcon: {
     backgroundColor: '#DCECF1',
   },
-
   peachMethodIcon: {
     backgroundColor: '#FFE5C2',
   },
-
   lilacMethodIcon: {
     backgroundColor: '#E6D9EA',
   },
-
   yellowMethodIcon: {
     backgroundColor: '#F1E8C7',
   },
-
   methodContent: {
     flex: 1,
     paddingRight: 8,
   },
-
   methodTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#173C2A',
     marginBottom: 4,
   },
-
   methodText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#7A877F',
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#7C8B82',
   },
-
   inputSection: {
-    marginTop: 2,
+    paddingTop: 2,
   },
-
   backLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 17,
-    paddingVertical: 5,
-  },
-
-  backText: {
-    marginLeft: 7,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#287A45',
-  },
-
-  inputHero: {
-    backgroundColor: '#205F47',
-    borderRadius: 29,
-    padding: 23,
-    marginBottom: 25,
-  },
-
-  inputHeroIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 19,
-    backgroundColor: '#287A45',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 17,
-  },
-
-  inputHeroTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-
-  inputHeroText: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#D8E9DC',
-  },
-
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#526158',
-    marginBottom: 8,
-  },
-
-  textInput: {
-    minHeight: 58,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#DCE4DB',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 17,
-    fontSize: 16,
-    color: '#173C2A',
     marginBottom: 18,
   },
-
-  ingredientsInput: {
-    minHeight: 180,
-    paddingTop: 16,
-  },
-
-  primaryButton: {
-    minHeight: 58,
-    borderRadius: 19,
-    backgroundColor: '#287A45',
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-
-  orText: {
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#9AA69E',
-    marginVertical: 17,
-  },
-
-  secondaryButton: {
-    minHeight: 56,
-    borderRadius: 19,
-    backgroundColor: '#EAF5E8',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  secondaryButtonText: {
-    marginLeft: 9,
-    fontSize: 15,
+  backText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#287A45',
+    marginLeft: 7,
   },
-
+  inputHero: {
+    backgroundColor: '#205F47',
+    borderRadius: 27,
+    padding: 21,
+    marginBottom: 22,
+  },
+  inputHeroIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: '#287A45',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 13,
+  },
+  inputHeroTitle: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  inputHeroText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#D8E9DC',
+    marginTop: 6,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#365342',
+    marginBottom: 8,
+  },
+  textInput: {
+    minHeight: 54,
+    borderWidth: 1,
+    borderColor: '#DCE4DC',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#173C2A',
+    marginBottom: 15,
+  },
+  ingredientsInput: {
+    minHeight: 150,
+    paddingTop: 15,
+  },
+  primaryButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    backgroundColor: '#287A45',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+    marginTop: 2,
+  },
+  disabledButton: {
+    opacity: 0.65,
+  },
+  primaryButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginRight: 10,
+  },
+  secondaryButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DCE7DC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+  },
+  secondaryButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#287A45',
+    marginLeft: 8,
+  },
+  orText: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#9AA69E',
+    marginVertical: 13,
+  },
   nutritionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 13,
-  },
-
-  nutritionField: {
-    width: '48.3%',
     marginBottom: 15,
   },
-
+  nutritionField: {
+    width: '48%',
+    marginBottom: 13,
+  },
   nutritionInputWrapper: {
-    height: 55,
-    borderRadius: 17,
+    minHeight: 54,
     borderWidth: 1,
-    borderColor: '#DCE4DB',
+    borderColor: '#DCE4DC',
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 13,
+    paddingRight: 13,
   },
-
   nutritionInput: {
     flex: 1,
+    paddingHorizontal: 14,
     fontSize: 16,
     color: '#173C2A',
   },
-
   unitText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#8A958E',
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#7C8B82',
   },
-
-  successCard: {
+  tipCard: {
+    marginTop: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E3EAE2',
-    borderRadius: 29,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-
-  successIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 23,
-    backgroundColor: '#EAF5E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 17,
-  },
-
-  successTitle: {
-    fontSize: 23,
-    fontWeight: '700',
-    color: '#173C2A',
-    marginBottom: 9,
-    textAlign: 'center',
-  },
-
-  successText: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#78857D',
-    textAlign: 'center',
-    marginBottom: 19,
-  },
-
-  tipCard: {
+    borderColor: '#E4EAE3',
     borderRadius: 24,
-    backgroundColor: '#EDF6EA',
     padding: 17,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 17,
+    alignItems: 'flex-start',
   },
-
   tipIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 16,
-    backgroundColor: '#DDF0D9',
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#E8F4E7',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
+    marginRight: 12,
   },
-
   tipContent: {
     flex: 1,
   },
-
   tipTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#287A45',
-    marginBottom: 4,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#173C2A',
+    marginBottom: 5,
   },
-
   tipText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#718078',
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#7C8B82',
   },
-
   bottomSpace: {
-    height: 5,
+    height: 30,
   },
-
-  /* CAMERA */
-
   cameraSafeArea: {
     flex: 1,
     backgroundColor: '#000000',
   },
-
   cameraContainer: {
     flex: 1,
     backgroundColor: '#000000',
-    position: 'relative',
   },
-
   camera: {
     ...StyleSheet.absoluteFill,
   },
-
   cameraOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'space-between',
     paddingHorizontal: 24,
     paddingVertical: 18,
   },
-
   cameraHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   closeButton: {
     width: 46,
     height: 46,
@@ -1424,26 +1218,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   closePlaceholder: {
     width: 46,
     height: 46,
   },
-
   cameraTitle: {
     fontSize: 14,
     letterSpacing: 1.5,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-
   cameraFrame: {
     width: '100%',
     height: 245,
     position: 'relative',
     alignSelf: 'center',
   },
-
   frameTopLeft: {
     position: 'absolute',
     top: 0,
@@ -1455,7 +1245,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderTopLeftRadius: 12,
   },
-
   frameTopRight: {
     position: 'absolute',
     top: 0,
@@ -1467,7 +1256,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderTopRightRadius: 12,
   },
-
   frameBottomLeft: {
     position: 'absolute',
     bottom: 0,
@@ -1479,7 +1267,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderBottomLeftRadius: 12,
   },
-
   frameBottomRight: {
     position: 'absolute',
     bottom: 0,
@@ -1491,7 +1278,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderBottomRightRadius: 12,
   },
-
   cameraScanLine: {
     position: 'absolute',
     left: 10,
@@ -1500,7 +1286,6 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#BFE0C2',
   },
-
   labelGuide: {
     position: 'absolute',
     left: 40,
@@ -1510,7 +1295,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   labelGuideText: {
     color: '#FFFFFF',
     fontSize: 13,
@@ -1518,12 +1302,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
-
   cameraBottom: {
     alignItems: 'center',
     paddingBottom: 12,
   },
-
   cameraInstruction: {
     fontSize: 17,
     fontWeight: '700',
@@ -1531,17 +1313,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 7,
   },
-
   cameraHint: {
     fontSize: 13,
     color: '#D8D8D8',
     textAlign: 'center',
   },
-
   captureButton: {
     width: 78,
     height: 78,
-    borderRadius: 36,
+    borderRadius: 39,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1549,12 +1329,39 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.9)',
   },
-
   captureInner: {
     width: 58,
     height: 58,
     borderRadius: 29,
     borderWidth: 3,
     borderColor: '#287A45',
+  },
+  cameraLoading: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  loadingCard: {
+    width: '78%',
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    padding: 22,
+    alignItems: 'center',
+  },
+  loadingTitle: {
+    marginTop: 13,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#173C2A',
+    textAlign: 'center',
+  },
+  loadingText: {
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 17,
+    color: '#7C8B82',
+    textAlign: 'center',
   },
 });
