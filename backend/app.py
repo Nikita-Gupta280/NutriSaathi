@@ -8,6 +8,7 @@ from backend.routes.analysis_routes import analysis_bp
 from backend.routes.family_routes import family_bp
 from backend.routes.history_routes import history_bp
 from backend.routes.comparison_routes import comparison_bp
+from backend.routes.chat_routes import chat_bp
 
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ app.register_blueprint(analysis_bp)
 app.register_blueprint(family_bp)
 app.register_blueprint(history_bp)
 app.register_blueprint(comparison_bp)
+app.register_blueprint(chat_bp)
 
 
 @app.get("/")
