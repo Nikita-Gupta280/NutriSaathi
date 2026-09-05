@@ -1,925 +1,306 @@
 import React, { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-type SectionKey =
-  | 'allergies'
-  | 'diet'
-  | 'health'
-  | 'goals'
-  | 'preferences';
-
-type Member = {
-  id: string;
+type Profile = {
+  member_id: string;
   name: string;
-  relation: string;
+  dietary: string[];
+  allergies: string[];
+  health: string[];
+  goals: string[];
 };
 
-const allergyOptions = [
-  'Peanut',
-  'Soy',
-  'Milk / Dairy',
-  'Gluten',
-  'Tree nuts',
-  'Sesame',
-  'Egg',
-  'Other',
+let store: Profile[] = [
+  { member_id: 'you', name: 'You', dietary: [], allergies: [], health: [], goals: [] },
+  { member_id: 'mom', name: 'Mom', dietary: [], allergies: [], health: [], goals: [] },
+  { member_id: 'dad', name: 'Dad', dietary: [], allergies: [], health: [], goals: [] },
 ];
 
-const dietOptions = [
-  'Vegetarian',
-  'Vegan',
-  'Jain',
-  'Satvik',
-  'Low sodium',
-  'Lactose free',
-  'Gluten free',
-];
+const OPTIONS = {
+  dietary: ['Vegetarian', 'Vegan', 'Jain', 'Gluten free', 'Non-vegetarian'],
+  allergies: ['Peanuts', 'Tree nuts', 'Milk / Lactose', 'Soy', 'Wheat / Gluten', 'Eggs', 'Sesame'],
+  health: ['Diabetes', 'High blood pressure', 'High cholesterol', 'Low sodium', 'High protein'],
+  goals: ['Weight management', 'Weight gain', 'Muscle gain', 'High protein', 'Low sugar', 'Balanced diet'],
+};
 
-const healthOptions = [
-  'Diabetes',
-  'High blood pressure',
-  'High cholesterol',
-  'Heart health',
-  'PCOS',
-  'Other',
-];
+const API_DIETARY: Record<string, string> = {
+  Vegetarian: 'vegetarian',
+  Vegan: 'vegan',
+  Jain: 'jain',
+  'Gluten free': 'gluten_free',
+  'Non-vegetarian': 'non_vegetarian',
+};
 
-const goalOptions = [
-  'Weight gain',
-  'Muscle gain',
-  'Weight management',
-  'High protein',
-  'Low sugar',
-  'Balanced diet',
-];
+const API_ALLERGIES: Record<string, string> = {
+  Peanuts: 'peanut',
+  'Tree nuts': 'tree_nut',
+  'Milk / Lactose': 'milk',
+  Soy: 'soy',
+  'Wheat / Gluten': 'gluten',
+  Eggs: 'egg',
+  Sesame: 'sesame',
+};
 
-const preferenceOptions = [
-  'Avoid artificial sweeteners',
-  'Avoid palm oil',
-  'Minimally processed food',
-  'Prefer whole grains',
-  'Prefer high fiber',
-  'Avoid added sugar',
-];
+const API_HEALTH: Record<string, string> = {
+  Diabetes: 'diabetes',
+  'High blood pressure': 'high_blood_pressure',
+  'High cholesterol': 'high_cholesterol',
+  'Low sodium': 'low_sodium',
+  'High protein': 'high_protein',
+};
+
+export const getFamilyMembersForApi = () =>
+  store.map(member => ({
+    member_id: member.member_id,
+    name: member.name,
+    dietary_preferences: member.dietary.map(v => API_DIETARY[v]).filter(Boolean),
+    allergies: member.allergies.map(v => API_ALLERGIES[v]).filter(Boolean),
+    health_considerations: Array.from(new Set([
+      ...member.health.map(v => API_HEALTH[v]).filter(Boolean),
+      ...member.goals.map(v => ({
+        'Weight management': 'weight_management',
+        'High protein': 'high_protein',
+      } as Record<string, string>)[v]).filter(Boolean),
+    ])),
+  }));
+
+type Section = keyof typeof OPTIONS;
 
 export default function FamilyScreen() {
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: 'you',
-      name: 'You',
-      relation: 'Your profile',
-    },
-    {
-      id: 'mom',
-      name: 'Mom',
-      relation: 'Family member',
-    },
-    {
-      id: 'dad',
-      name: 'Dad',
-      relation: 'Family member',
-    },
-  ]);
+  const [profiles, setProfiles] = useState<Profile[]>(store);
+  const [draft, setDraft] = useState<Profile | null>(null);
+  const [name, setName] = useState('');
+  const [section, setSection] = useState<Section | null>(null);
 
-  const [selectedMember, setSelectedMember] =
-    useState('you');
-
-  const [openSection, setOpenSection] =
-    useState<SectionKey | null>('allergies');
-
-  const [selected, setSelected] = useState<
-    Record<string, string[]>
-  >({
-    allergies: [],
-    diet: [],
-    health: [],
-    goals: [],
-    preferences: [],
-  });
-
-  const [customName, setCustomName] = useState('');
-
-  const currentMember = members.find(
-    (member) => member.id === selectedMember
-  );
-
-  const toggleOption = (
-    section: SectionKey,
-    option: string
-  ) => {
-    setSelected((current) => {
-      const values = current[section] || [];
-
-      if (values.includes(option)) {
-        return {
-          ...current,
-          [section]: values.filter(
-            (item) => item !== option
-          ),
-        };
-      }
-
-      return {
-        ...current,
-        [section]: [...values, option],
-      };
+  const open = (p: Profile) => {
+    setDraft({
+      ...p,
+      dietary: [...p.dietary],
+      allergies: [...p.allergies],
+      health: [...p.health],
+      goals: [...p.goals],
     });
+    setName(p.name);
+    setSection(null);
   };
 
-  const addMember = () => {
-    if (members.length >= 5) {
-      Alert.alert(
-        'Maximum reached',
-        'You can create up to 5 family profiles.'
-      );
+  const add = () => {
+    setDraft({ member_id: `member-${Date.now()}`, name: '', dietary: [], allergies: [], health: [], goals: [] });
+    setName('');
+    setSection(null);
+  };
+
+  const save = () => {
+    if (!draft || !name.trim()) {
+      Alert.alert('Name required', 'Enter a name for this family member.');
       return;
     }
+    const saved = { ...draft, name: name.trim() };
+    const index = store.findIndex(p => p.member_id === saved.member_id);
+    if (index >= 0) store[index] = saved;
+    else store = [...store, saved];
+    setProfiles([...store]);
+    setDraft(null);
+  };
 
-    const id = `member-${members.length + 1}`;
+  const toggle = (value: string) => {
+    if (!draft || !section) return;
+    const values = draft[section];
+    const next = values.includes(value) ? values.filter(v => v !== value) : [...values, value];
+    setDraft({ ...draft, [section]: next });
+  };
 
-    setMembers((current) => [
-      ...current,
-      {
-        id,
-        name: `Member ${members.length + 1}`,
-        relation: 'New family member',
-      },
+  const remove = (p: Profile) => {
+    if (p.member_id === 'you') return;
+    Alert.alert('Remove member?', `Remove ${p.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => {
+        store = store.filter(x => x.member_id !== p.member_id);
+        setProfiles([...store]);
+      }},
     ]);
-
-    setSelectedMember(id);
   };
 
-  const saveProfile = () => {
-    Alert.alert(
-      'Profile saved',
-      `${currentMember?.name}'s nutrition profile has been saved.`
-    );
-  };
-
-  const renderSection = (
-    key: SectionKey,
-    title: string,
-    subtitle: string,
-    icon: keyof typeof Ionicons.glyphMap,
-    options: string[]
-  ) => {
-    const isOpen = openSection === key;
-    const selectedCount = selected[key]?.length || 0;
-
-    return (
-      <View style={styles.sectionCard}>
-        <Pressable
-          style={styles.sectionHeader}
-          onPress={() =>
-            setOpenSection(isOpen ? null : key)
-          }
-        >
-          <View style={styles.sectionIcon}>
-            <Ionicons
-              name={icon}
-              size={21}
-              color="#287A45"
-            />
-          </View>
-
-          <View style={styles.sectionHeaderText}>
-            <Text style={styles.sectionTitle}>
-              {title}
-            </Text>
-
-            <Text style={styles.sectionSubtitle}>
-              {selectedCount > 0
-                ? `${selectedCount} selected`
-                : subtitle}
-            </Text>
-          </View>
-
-          <Ionicons
-            name={
-              isOpen
-                ? 'chevron-up'
-                : 'chevron-down'
-            }
-            size={19}
-            color="#7E8B83"
-          />
-        </Pressable>
-
-        {isOpen && (
-          <View style={styles.optionsContainer}>
-            {options.map((option) => {
-              const isSelected =
-                selected[key]?.includes(option);
-
-              return (
-                <Pressable
-                  key={option}
-                  style={[
-                    styles.optionChip,
-                    isSelected &&
-                      styles.optionChipSelected,
-                  ]}
-                  onPress={() =>
-                    toggleOption(key, option)
-                  }
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      isSelected &&
-                        styles.checkboxSelected,
-                    ]}
-                  >
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={14}
-                        color="#FFFFFF"
-                      />
-                    )}
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.optionText,
-                      isSelected &&
-                        styles.optionTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={['top', 'bottom']}
-    >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>
-              PERSONALIZED NUTRITION
-            </Text>
-
-            <Text style={styles.title}>
-              Family Profiles
-            </Text>
-
-            <Text style={styles.subtitle}>
-              Tell NutriSaathi what matters to each
-              person so food recommendations stay
-              personal.
-            </Text>
-          </View>
-
-          <View style={styles.headerIcon}>
-            <Ionicons
-              name="people-outline"
-              size={25}
-              color="#287A45"
-            />
-          </View>
-        </View>
-
-        <View style={styles.memberCard}>
-          <View style={styles.memberCardHeader}>
-            <View>
-              <Text style={styles.memberLabel}>
-                WHO ARE WE CHECKING FOR?
-              </Text>
-
-              <Text style={styles.memberHint}>
-                Select a profile to personalize it.
-              </Text>
-            </View>
-
-            <Pressable
-              style={styles.addMemberButton}
-              onPress={addMember}
-            >
-              <Ionicons
-                name="person-add"
-                size={18}
-                color="#287A45"
-              />
+  if (draft) {
+    if (section) {
+      const selected = draft[section];
+      return (
+        <SafeAreaView style={s.safe}>
+          <View style={s.header}>
+            <Pressable style={s.back} onPress={() => setSection(null)}>
+              <Ionicons name="arrow-back" size={22} color="#173B2A" />
             </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={s.eyebrow}>FAMILY PROFILE</Text>
+              <Text style={s.headerTitle}>{section === 'dietary' ? 'Dietary preferences' : section === 'allergies' ? 'Allergies & restrictions' : section === 'health' ? 'Health considerations' : 'Nutrition goals'}</Text>
+            </View>
+            <Text style={s.count}>{selected.length}</Text>
           </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.memberScroll}
-          >
-            {members.map((member) => {
-              const active =
-                selectedMember === member.id;
-
+          <ScrollView contentContainerStyle={s.body}>
+            <Text style={s.hint}>Select everything that applies to {name || 'this member'}.</Text>
+            {OPTIONS[section].map(value => {
+              const active = selected.includes(value);
               return (
-                <Pressable
-                  key={member.id}
-                  style={[
-                    styles.memberPill,
-                    active &&
-                      styles.memberPillActive,
-                  ]}
-                  onPress={() =>
-                    setSelectedMember(member.id)
-                  }
-                >
-                  <View
-                    style={[
-                      styles.avatar,
-                      active &&
-                        styles.avatarActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.avatarText,
-                        active &&
-                          styles.avatarTextActive,
-                      ]}
-                    >
-                      {member.name.charAt(0)}
-                    </Text>
+                <Pressable key={value} style={[s.option, active && s.optionActive]} onPress={() => toggle(value)}>
+                  <View style={[s.check, active && s.checkActive]}>
+                    {active && <Ionicons name="checkmark" size={14} color="#fff" />}
                   </View>
-
-                  <Text
-                    style={[
-                      styles.memberName,
-                      active &&
-                        styles.memberNameActive,
-                    ]}
-                  >
-                    {member.name}
-                  </Text>
+                  <Text style={[s.optionText, active && s.optionTextActive]}>{value}</Text>
                 </Pressable>
               );
             })}
           </ScrollView>
+          <View style={s.bottom}>
+            <Pressable style={s.primary} onPress={() => setSection(null)}>
+              <Text style={s.primaryText}>Done</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
+    return (
+      <SafeAreaView style={s.safe}>
+        <ScrollView contentContainerStyle={s.body}>
+          <View style={s.header}>
+            <Pressable style={s.back} onPress={() => setDraft(null)}>
+              <Ionicons name="arrow-back" size={22} color="#173B2A" />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={s.eyebrow}>FAMILY PROFILE</Text>
+              <Text style={s.headerTitle}>Member details</Text>
+            </View>
+          </View>
+
+          <View style={s.card}>
+            <Text style={s.label}>NAME</Text>
+            <TextInput value={name} onChangeText={setName} placeholder="e.g. Test Member" placeholderTextColor="#9AA69E" style={s.input} />
+          </View>
+
+          <Text style={s.title}>Personalise this profile</Text>
+          <Text style={s.hint}>These details can be used by NutriSaathi's family engine.</Text>
+
+          <EditRow title="Dietary preferences" values={draft.dietary} onPress={() => setSection('dietary')} />
+          <EditRow title="Allergies & restrictions" values={draft.allergies} onPress={() => setSection('allergies')} />
+          <EditRow title="Health considerations" values={draft.health} onPress={() => setSection('health')} />
+          <EditRow title="Nutrition goals" values={draft.goals} onPress={() => setSection('goals')} />
+
+          <Pressable style={s.primary} onPress={save}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <Text style={s.primaryText}>Save profile</Text>
+          </Pressable>
+          <Pressable style={s.cancel} onPress={() => setDraft(null)}>
+            <Text style={s.cancelText}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <ScrollView contentContainerStyle={s.body}>
+        <View style={s.top}>
+          <View>
+            <Text style={s.eyebrow}>SMART FAMILY MODE</Text>
+            <Text style={s.title}>Your family</Text>
+            <Text style={s.hint}>Personalised food safety for everyone.</Text>
+          </View>
+          <View style={s.icon}><Ionicons name="people-outline" size={25} color="#287A45" /></View>
         </View>
 
-        <View style={styles.profileBanner}>
-          <View style={styles.profileAvatar}>
-            <Text style={styles.profileAvatarText}>
-              {currentMember?.name.charAt(0)}
-            </Text>
-          </View>
-
-          <View style={styles.profileBannerText}>
-            <Text style={styles.profileName}>
-              {currentMember?.name}
-            </Text>
-
-            <Text style={styles.profileRelation}>
-              {currentMember?.relation}
-            </Text>
-          </View>
-
-          <View style={styles.activeBadge}>
-            <Text style={styles.activeBadgeText}>
-              ACTIVE
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.setupTitle}>
-          Build {currentMember?.name}'s profile
-        </Text>
-
-        <Text style={styles.setupSubtitle}>
-          Select everything that applies. NutriSaathi
-          will use this information when analyzing
-          food.
-        </Text>
-
-        {renderSection(
-          'allergies',
-          'Allergies & intolerances',
-          'Peanut, soy, dairy, gluten...',
-          'warning-outline',
-          allergyOptions
-        )}
-
-        {renderSection(
-          'diet',
-          'Dietary restrictions',
-          'Vegetarian, vegan, Jain...',
-          'leaf-outline',
-          dietOptions
-        )}
-
-        {renderSection(
-          'health',
-          'Health considerations',
-          'Diabetes, blood pressure...',
-          'fitness-outline',
-          healthOptions
-        )}
-
-        {renderSection(
-          'goals',
-          'Nutrition goals',
-          'Muscle gain, low sugar...',
-          'trophy',
-          goalOptions
-        )}
-
-        {renderSection(
-          'preferences',
-          'Food preferences',
-          'Ingredients and processing...',
-          'heart-outline',
-          preferenceOptions
-        )}
-
-        <View style={styles.customCard}>
-          <View style={styles.customIcon}>
-            <Ionicons
-              name="create-outline"
-              size={20}
-              color="#287A45"
-            />
-          </View>
-
-          <View style={styles.customText}>
-            <Text style={styles.customTitle}>
-              Add another family member
-            </Text>
-
-            <Text style={styles.customSubtitle}>
-              Create a personalized profile for anyone
-              in your family.
-            </Text>
+        <View style={s.hero}>
+          <Ionicons name="shield-checkmark-outline" size={28} color="#287A45" />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={s.heroTitle}>Family-first food decisions</Text>
+            <Text style={s.hint}>Add diets, allergies, health considerations and goals.</Text>
           </View>
         </View>
 
-        <Pressable
-          style={styles.saveButton}
-          onPress={saveProfile}
-        >
-          <Ionicons
-            name="checkmark-circle"
-            size={22}
-            color="#FFFFFF"
-          />
-
-          <Text style={styles.saveButtonText}>
-            Save {currentMember?.name}'s Profile
-          </Text>
-        </Pressable>
-
-        <View style={styles.intelligenceCard}>
-          <View style={styles.intelligenceIcon}>
-            <Ionicons
-              name="sparkles"
-              size={20}
-              color="#287A45"
-            />
-          </View>
-
-          <View style={styles.intelligenceText}>
-            <Text style={styles.intelligenceTitle}>
-              How NutriSaathi uses this
-            </Text>
-
-            <Text style={styles.intelligenceBody}>
-              Example: If Dad has diabetes and a low
-              sugar goal, a product with high added
-              sugar can be flagged even when its
-              general health score looks acceptable.
-            </Text>
-          </View>
+        <View style={s.row}>
+          <View><Text style={s.sectionTitle}>Family members</Text><Text style={s.hint}>{profiles.length} profiles saved</Text></View>
+          <Pressable style={s.add} onPress={add}><Ionicons name="add" size={18} color="#fff" /><Text style={s.addText}>Add member</Text></Pressable>
         </View>
 
-        <View style={styles.bottomSpace} />
+        {profiles.map(p => (
+          <View key={p.member_id} style={s.card}>
+            <View style={s.memberRow}>
+              <View style={s.avatar}><Ionicons name="person" size={20} color="#287A45" /></View>
+              <View style={{ flex: 1 }}><Text style={s.memberName}>{p.name}</Text><Text style={s.hint}>{p.member_id === 'you' ? 'Primary profile' : 'Family profile'}</Text></View>
+              <Pressable style={s.smallButton} onPress={() => open(p)}><Ionicons name="create-outline" size={18} color="#287A45" /></Pressable>
+              {p.member_id !== 'you' && <Pressable style={s.smallButton} onPress={() => remove(p)}><Ionicons name="trash-outline" size={17} color="#B8754E" /></Pressable>}
+            </View>
+            <Summary label="Diet" values={p.dietary} />
+            <Summary label="Allergies" values={p.allergies} />
+            <Summary label="Health" values={p.health} />
+            <Summary label="Goals" values={p.goals} />
+          </View>
+        ))}
+
+        <Text style={s.footer}>NutriSaathi · Food decisions made personal.</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F7FAF7',
-  },
+function EditRow({ title, values, onPress }: { title: string; values: string[]; onPress: () => void }) {
+  return (
+    <Pressable style={s.editRow} onPress={onPress}>
+      <View style={{ flex: 1 }}><Text style={s.rowTitle}>{title}</Text><Text style={s.hint}>{values.length ? values.join(' · ') : 'Not added yet'}</Text></View>
+      <Ionicons name="chevron-forward" size={20} color="#9AA69E" />
+    </Pressable>
+  );
+}
 
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 35,
-  },
+function Summary({ label, values }: { label: string; values: string[] }) {
+  return (
+    <View style={s.summary}>
+      <Text style={s.label}>{label}</Text>
+      <Text style={s.hint}>{values.length ? values.join(' · ') : 'None added'}</Text>
+    </View>
+  );
+}
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-
-  headerText: {
-    flex: 1,
-  },
-
-  eyebrow: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    color: '#287A45',
-    marginBottom: 5,
-  },
-
-  title: {
-    fontSize: 29,
-    fontWeight: '700',
-    color: '#183B25',
-  },
-
-  subtitle: {
-    fontSize: 13.5,
-    lineHeight: 20,
-    color: '#718078',
-    marginTop: 5,
-    paddingRight: 8,
-  },
-
-  headerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#E9F4EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-
-  memberCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5ECE6',
-    marginBottom: 14,
-  },
-
-  memberCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  memberLabel: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    color: '#287A45',
-  },
-
-  memberHint: {
-    fontSize: 11.5,
-    color: '#8A958E',
-    marginTop: 3,
-  },
-
-  addMemberButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#EAF5ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  memberScroll: {
-    paddingTop: 15,
-    paddingRight: 8,
-  },
-
-  memberPill: {
-    minWidth: 84,
-    height: 82,
-    borderRadius: 15,
-    backgroundColor: '#F6F9F6',
-    borderWidth: 1,
-    borderColor: '#E4EBE5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-    paddingHorizontal: 10,
-  },
-
-  memberPillActive: {
-    backgroundColor: '#EAF5ED',
-    borderColor: '#A9CBB1',
-  },
-
-  avatar: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    backgroundColor: '#E1E8E3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-
-  avatarActive: {
-    backgroundColor: '#287A45',
-  },
-
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#607067',
-  },
-
-  avatarTextActive: {
-    color: '#FFFFFF',
-  },
-
-  memberName: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#66746B',
-  },
-
-  memberNameActive: {
-    color: '#287A45',
-    fontWeight: '700',
-  },
-
-  profileBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#183B25',
-    borderRadius: 18,
-    padding: 15,
-    marginBottom: 22,
-  },
-
-  profileAvatar: {
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    backgroundColor: '#D7EBDD',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  profileAvatarText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#287A45',
-  },
-
-  profileBannerText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  profileName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  profileRelation: {
-    color: '#B9CCBF',
-    fontSize: 11.5,
-    marginTop: 2,
-  },
-
-  activeBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: '#2D6640',
-  },
-
-  activeBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: '#DDF0E2',
-  },
-
-  setupTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: '#183B25',
-  },
-
-  setupSubtitle: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: '#7B8880',
-    marginTop: 4,
-    marginBottom: 15,
-  },
-
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E5ECE6',
-    marginBottom: 11,
-    overflow: 'hidden',
-  },
-
-  sectionHeader: {
-    minHeight: 70,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-  },
-
-  sectionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: '#EAF5ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 11,
-  },
-
-  sectionHeaderText: {
-    flex: 1,
-  },
-
-  sectionTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#263D2D',
-  },
-
-  sectionSubtitle: {
-    fontSize: 11.5,
-    color: '#89958E',
-    marginTop: 3,
-  },
-
-  optionsContainer: {
-    paddingHorizontal: 14,
-    paddingBottom: 13,
-    paddingTop: 2,
-  },
-
-  optionChip: {
-    minHeight: 43,
-    borderRadius: 12,
-    backgroundColor: '#F7FAF7',
-    borderWidth: 1,
-    borderColor: '#E6ECE7',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 11,
-    marginTop: 7,
-  },
-
-  optionChipSelected: {
-    backgroundColor: '#EDF7EF',
-    borderColor: '#B7D4BE',
-  },
-
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: '#B9C4BC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-  },
-
-  checkboxSelected: {
-    backgroundColor: '#287A45',
-    borderColor: '#287A45',
-  },
-
-  optionText: {
-    flex: 1,
-    fontSize: 12.5,
-    color: '#526159',
-  },
-
-  optionTextSelected: {
-    color: '#245D35',
-    fontWeight: '600',
-  },
-
-  customCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#E5ECE6',
-    marginTop: 4,
-    marginBottom: 13,
-  },
-
-  customIcon: {
-    width: 39,
-    height: 39,
-    borderRadius: 12,
-    backgroundColor: '#EAF5ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 11,
-  },
-
-  customText: {
-    flex: 1,
-  },
-
-  customTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#29402F',
-  },
-
-  customSubtitle: {
-    fontSize: 11,
-    color: '#89958E',
-    marginTop: 3,
-    lineHeight: 16,
-  },
-
-  saveButton: {
-    height: 53,
-    borderRadius: 16,
-    backgroundColor: '#287A45',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14.5,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-
-  intelligenceCard: {
-    flexDirection: 'row',
-    backgroundColor: '#EAF5ED',
-    borderRadius: 17,
-    padding: 15,
-    marginTop: 13,
-  },
-
-  intelligenceIcon: {
-    width: 37,
-    height: 37,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  intelligenceText: {
-    flex: 1,
-  },
-
-  intelligenceTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#285333',
-    marginBottom: 4,
-  },
-
-  intelligenceBody: {
-    fontSize: 11.5,
-    lineHeight: 17,
-    color: '#617367',
-  },
-
-  bottomSpace: {
-    height: 20,
-  },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F6F9F4' },
+  body: { padding: 20, paddingBottom: 40 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E1E8E1' },
+  back: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  eyebrow: { fontSize: 9, fontWeight: '800', letterSpacing: 1.8, color: '#287A45', marginBottom: 5 },
+  title: { fontSize: 28, fontWeight: '800', color: '#173B2A' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#173B2A' },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#173B2A' },
+  hint: { fontSize: 10, lineHeight: 15, color: '#718078', marginTop: 4 },
+  icon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#E8F4E7', alignItems: 'center', justifyContent: 'center' },
+  hero: { backgroundColor: '#E8F4E7', borderRadius: 20, padding: 16, flexDirection: 'row', marginBottom: 22 },
+  heroTitle: { fontSize: 13, fontWeight: '800', color: '#173B2A' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  add: { backgroundColor: '#287A45', borderRadius: 13, minHeight: 40, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  card: { backgroundColor: '#fff', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#E1E8E1', marginBottom: 12 },
+  memberRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  avatar: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#E8F4E7', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  memberName: { fontSize: 15, fontWeight: '800', color: '#173B2A' },
+  smallButton: { width: 35, height: 35, borderRadius: 11, backgroundColor: '#E8F4E7', alignItems: 'center', justifyContent: 'center', marginLeft: 5 },
+  summary: { marginTop: 9 },
+  label: { fontSize: 8, fontWeight: '800', letterSpacing: 1, color: '#89958E' },
+  editRow: { minHeight: 66, backgroundColor: '#fff', borderRadius: 17, borderWidth: 1, borderColor: '#E1E8E1', paddingHorizontal: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center' },
+  rowTitle: { fontSize: 12, fontWeight: '800', color: '#173B2A' },
+  input: { fontSize: 17, fontWeight: '700', color: '#173B2A', paddingVertical: 8 },
+  option: { minHeight: 52, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E1E8E1', paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', marginBottom: 9 },
+  optionActive: { backgroundColor: '#E8F4E7', borderColor: '#BBD8BE' },
+  check: { width: 25, height: 25, borderRadius: 13, borderWidth: 1.5, borderColor: '#C7D0C9', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  checkActive: { backgroundColor: '#287A45', borderColor: '#287A45' },
+  optionText: { fontSize: 11, color: '#51615A' },
+  optionTextActive: { color: '#173B2A', fontWeight: '800' },
+  count: { backgroundColor: '#E8F4E7', color: '#287A45', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, fontWeight: '800' },
+  bottom: { padding: 12, borderTopWidth: 1, borderTopColor: '#E1E8E1', backgroundColor: '#F6F9F4' },
+  primary: { minHeight: 52, borderRadius: 17, backgroundColor: '#287A45', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, marginTop: 16 },
+  primaryText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  cancel: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#718078', fontSize: 12, fontWeight: '700' },
+  footer: { textAlign: 'center', color: '#89958E', fontSize: 9, marginTop: 18 },
 });

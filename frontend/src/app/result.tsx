@@ -26,6 +26,7 @@ type ProductView = {
   label: string;
   reasons: string[];
   familyResults: AnyObject[];
+  recommendations: AnyObject[];
 };
 
 const asObject = (value: any): AnyObject | null =>
@@ -159,6 +160,13 @@ const normalizeResponse = (payload: AnyObject | null): ProductView | null => {
     (Array.isArray(data.family_results) && data.family_results) ||
     [];
 
+  const recommendations =
+    (Array.isArray(analysis.recommendations) && analysis.recommendations) ||
+    (Array.isArray(payload.recommendations) && payload.recommendations) ||
+    (Array.isArray(data.recommendations) && data.recommendations) ||
+    (Array.isArray(result.recommendations) && result.recommendations) ||
+    [];
+
   const name = textValue(
     product.product_name,
     product.name,
@@ -198,6 +206,7 @@ const normalizeResponse = (payload: AnyObject | null): ProductView | null => {
     label: label || 'Analysis available',
     reasons,
     familyResults,
+    recommendations,
   };
 };
 
@@ -220,6 +229,24 @@ const getFamilyVerdict = (member: AnyObject) =>
 
 const getFamilyReasons = (member: AnyObject) =>
   stringArray(member.reasons ?? member.reason ?? member.explanation);
+
+const getRecommendationName = (item: AnyObject, index: number) =>
+  textValue(
+    item.product_name,
+    item.name,
+    item.title,
+    item.product?.product_name,
+    item.product?.name
+  ) || `Recommended product ${index + 1}`;
+
+const getRecommendationBrand = (item: AnyObject) =>
+  textValue(item.brand, item.product?.brand);
+
+const getRecommendationCategory = (item: AnyObject) =>
+  textValue(item.category, item.product?.category);
+
+const getRecommendationReason = (item: AnyObject) =>
+  textValue(item.reason, item.reasons, item.explanation, item.match_reason);
 
 export default function ResultScreen() {
   const params = useLocalSearchParams<{
@@ -296,10 +323,17 @@ export default function ResultScreen() {
     );
   }
 
+  const scoreIsOutOfTen = product.score !== null && product.score <= 10;
+  const scoreMaximum = scoreIsOutOfTen ? 10 : 100;
+  const scoreDisplay =
+    product.score === null ? '—' : String(product.score);
   const scoreWidth: `${number}%` =
     product.score === null
       ? '0%'
-      : `${Math.max(0, Math.min(100, product.score))}%`;
+      : `${Math.max(
+          0,
+          Math.min(100, (product.score / scoreMaximum) * 100)
+        )}%`;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -641,6 +675,61 @@ export default function ResultScreen() {
               );
             })}
           </View>
+        )}
+
+        {product.recommendations.length > 0 && (
+          <>
+            <View style={[styles.sectionHeader, styles.recommendationHeader]}>
+              <Text style={styles.sectionTitle}>Better alternatives</Text>
+              <Text style={styles.smallLabel}>
+                {product.recommendations.length} found
+              </Text>
+            </View>
+
+            <View style={styles.recommendationCard}>
+              {product.recommendations.slice(0, 5).map((item, index) => {
+                const name = getRecommendationName(item, index);
+                const brand = getRecommendationBrand(item);
+                const category = getRecommendationCategory(item);
+                const reason = getRecommendationReason(item);
+
+                return (
+                  <View
+                    key={`${name}-${index}`}
+                    style={[
+                      styles.recommendationItem,
+                      index > 0 && styles.recommendationDivider,
+                    ]}
+                  >
+                    <View style={styles.recommendationIcon}>
+                      <Ionicons
+                        name="leaf-outline"
+                        size={20}
+                        color="#287A45"
+                      />
+                    </View>
+
+                    <View style={styles.recommendationInfo}>
+                      <Text style={styles.recommendationName}>{name}</Text>
+                      {!!brand && (
+                        <Text style={styles.recommendationBrand}>{brand}</Text>
+                      )}
+                      {!!category && (
+                        <Text style={styles.recommendationCategory}>
+                          {category}
+                        </Text>
+                      )}
+                      {!!reason && (
+                        <Text style={styles.recommendationReason}>
+                          {reason}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </>
         )}
 
         <View style={styles.aiCard}>
@@ -1161,6 +1250,61 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '800',
     color: '#A66A43',
+  },
+  recommendationHeader: {
+    marginTop: 27,
+  },
+  recommendationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 23,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#E4EAE3',
+  },
+  recommendationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 7,
+  },
+  recommendationDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#E9EDE9',
+    paddingTop: 15,
+    marginTop: 8,
+  },
+  recommendationIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#E8F4E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
+  },
+  recommendationInfo: {
+    flex: 1,
+  },
+  recommendationName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#173B2A',
+  },
+  recommendationBrand: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#287A45',
+    marginTop: 3,
+  },
+  recommendationCategory: {
+    fontSize: 9,
+    color: '#89958E',
+    marginTop: 3,
+  },
+  recommendationReason: {
+    fontSize: 10,
+    lineHeight: 15,
+    color: '#60746A',
+    marginTop: 5,
   },
   aiCard: {
     marginTop: 27,
