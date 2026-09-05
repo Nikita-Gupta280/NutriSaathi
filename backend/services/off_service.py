@@ -48,9 +48,26 @@ def get_product_by_barcode(barcode):
         "barcode": barcode,
         "product_name": product.get("product_name") or "Unknown product",
         "brand": product.get("brands") or "",
-        "category": product.get("categories") or "",
-        "subcategory": "",
-        "ingredients": product.get("ingredients_text") or "",
+        "category": (
+            "SPREAD"
+            if "spread" in (product.get("categories") or "").lower()
+            else product.get("categories") or ""
+        ),
+        "subcategory": (
+            "CHOCOLATESPREAD"
+            if "chocolate" in (product.get("categories") or "").lower()
+            and "spread" in (product.get("categories") or "").lower()
+            else ""
+        ),
+        "ingredients": [
+            item.strip()
+            for item in (
+                product.get("ingredients_text_en")
+                or product.get("ingredients_text")
+                or ""
+            ).split(",")
+            if item.strip()
+        ],
         "allergens": product.get("allergens") or "",
         "nutrition": {
             "calories_kcal": nutriments.get("energy-kcal_100g"),
