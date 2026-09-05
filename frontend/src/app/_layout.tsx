@@ -15,11 +15,6 @@ export default function TabLayout() {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E7ECE7',
-
-          // IMPORTANT:
-          // Do not set a fixed height here.
-          // React Navigation will automatically account
-          // for the Android system navigation area.
           paddingTop: 6,
           paddingBottom: 6,
         },
@@ -37,6 +32,8 @@ export default function TabLayout() {
         tabBarHideOnKeyboard: true,
       }}
     >
+      {/* MAIN TABS */}
+
       <Tabs.Screen
         name="index"
         options={{
@@ -107,7 +104,8 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hidden screens */}
+      {/* HIDDEN ROUTES */}
+
       <Tabs.Screen
         name="result"
         options={{
@@ -128,6 +126,8 @@ export default function TabLayout() {
           href: null,
         }}
       />
+
+      {/* CHATBOT */}
 
       <Tabs.Screen
         name="chat"
