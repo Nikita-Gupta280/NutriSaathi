@@ -105,4 +105,44 @@ if __name__ == "__main__":
 
     print(json.dumps(result, indent=2))
 
-    
+
+def analyze_external_product(product, family_members):
+    """
+    Run the same NutriSaathi intelligence on an external product.
+    """
+
+    ingredient_analysis = analyze_ingredients(
+        product.get("ingredients", "")
+    )
+
+    health_score_result = calculate_health_score(
+        product.get("nutrition", {})
+    )
+
+    score_100 = health_score_result["score"]
+    score_10 = round(score_100 / 10, 1)
+
+    family_results = evaluate_family(
+        family_members,
+        product.get("ingredients", ""),
+        product.get("nutrition", {})
+    )
+
+    recommendations = recommend_products(
+        product,
+        family_members
+    )
+
+    return {
+        "success": True,
+        "product": product,
+        "health_score": {
+            "score": score_10,
+            "scale": 10,
+            "label": health_score_result["label"],
+            "details": health_score_result["deductions"]
+        },
+        "ingredient_analysis": ingredient_analysis,
+        "family_results": family_results,
+        "recommendations": recommendations
+    }
